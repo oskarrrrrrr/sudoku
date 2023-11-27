@@ -7,8 +7,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: pwd
-      - run: ls
+      - uses: actions/checkout@v4
       - name: setup golang
         uses: actions/setup-go@v4.1.0
         with:
