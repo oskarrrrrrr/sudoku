@@ -67,6 +67,9 @@ func main() {
 	temp, err := template.New("index").Parse(templateString)
 	check(err)
 
+    err = os.MkdirAll("out", os.FileMode(0777))
+    check(err)
+
     of, err := os.Create("out/index.html")
     check(err)
     defer of.Close()
