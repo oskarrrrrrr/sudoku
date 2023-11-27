@@ -1,0 +1,24 @@
+name: deploy-sudoku
+on: []
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup golang
+        uses: actions/setup-go@v4.1.0
+        with:
+          go-version: "1.21.0"   
+      - run: go run tools/main.go
+      - name: setup nodejs
+        uses: actions/setup-node@v4.0.0
+        with:
+          node-version-file: .nvmrc
+          cache-dependency-path: package-lock.json
+      - run: npm run tsc
+      - run: cp site/style.css out/
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - run: rsync -a --delete out/ root@oskarrrrrrr.xyz:/var/www/sudoku
