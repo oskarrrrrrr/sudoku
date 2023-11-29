@@ -67,15 +67,15 @@ func generateTemplateInput(n int) TemplateInput {
 }
 
 func main() {
-	templateString := readTemplateString("site/index.html")
+	templateString := readTemplateString("src/index.html")
 	input := generateTemplateInput(3)
 	temp, err := template.New("index").Parse(templateString)
 	check(err)
 
-    err = os.MkdirAll("out", os.FileMode(0777))
+    err = os.MkdirAll("site", os.FileMode(0777))
     check(err)
 
-    of, err := os.Create("out/index.html")
+    of, err := os.Create("site/index.html")
     check(err)
     defer of.Close()
 

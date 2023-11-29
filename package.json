@@ -4,7 +4,8 @@
     "linux"
   ],
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "gulp": "gulp"
   },
   "devDependencies": {
     "gulp": "^4.0.2",

@@ -1,41 +1,41 @@
 const { watch, src, dest, series, parallel } = require("gulp")
-const cp = require("child_process");
-const ts = require("gulp-typescript");
+const cp = require("child_process")
+const ts = require("gulp-typescript")
 
-const tsProject = ts.createProject("tsconfig.json");
+const tsProject = ts.createProject("tsconfig.json")
 
-function build_builder(cb) {
-    return cp.exec("go build -o tools/main tools/main.go", cb)
+function build(cb) {
+    return cp.exec("go build -o scripts/build src/build.go", cb)
 }
 
 function html(cb) {
-    return cp.exec("./tools/main", cb)
+    return cp.exec("./scripts/build", cb)
 }
 
 function css(cb) {
-    return src("site/*.css")
-        .pipe(dest("out"))
+    return src("src/*.css")
+        .pipe(dest("site"))
 }
 
 function tsc(cb) {
     return tsProject.src()
         .pipe(tsProject())
-        .js.pipe(dest("out"));
+        .js.pipe(dest("site"));
 }
 
 exports.watch = function() {
-    watch("tools/*.go", series(build_builder, html))
-    watch("site/*.html", html)
-    watch("site/*.css", css)
-    watch("site/*.ts", tsc)
+    watch("src/build.go", series(build_builder, html))
+    watch("src/*.html", html)
+    watch("src/*.css", css)
+    watch("src/*.ts", tsc)
 }
 
 exports.clean = function(cb) {
-    return cp.exec("rm out/* tools/main", cb)
+    return cp.exec("rm -rf site/* scripts/*", cb)
 }
 
 exports.build = parallel(
-        series(build_builder, html),
-        css,
-        tsc
-    )
+    series(build, html),
+    css,
+    tsc
+)
