@@ -1,3 +1,93 @@
+class CursorMoveEvent {
+    from_pos: number
+    to_pos: number
+
+    constructor(from_pos: number, to_pos: number) {
+        this.from_pos = from_pos
+        this.to_pos = to_pos
+    }
+
+    emit(): void {
+        emitSudokuEvent("CursorMoveEvent", this)
+    }
+
+    static listen(cb: (event: CursorMoveEvent) => void): void {
+        listenToSudokuEvent("CursorMoveEvent", cb)
+    }
+}
+
+class ValueSetEvent {
+    pos: number
+    value: number
+
+    constructor(pos: number, value: number) {
+        this.pos = pos
+        this.value = value
+    }
+
+    emit(): void {
+        emitSudokuEvent("ValueSetEvent", this)
+    }
+
+    static listen(cb: (event: ValueSetEvent) => void): void {
+        listenToSudokuEvent("ValueSetEvent", cb)
+    }
+}
+
+class FreezeEvent {
+    pos: number
+    frozen: boolean
+
+    constructor(pos: number, frozen: boolean) {
+        this.pos = pos
+        this.frozen = frozen
+    }
+
+    emit(): void {
+        emitSudokuEvent("FreezeEvent", this)
+    }
+
+    static listen(cb: (event: FreezeEvent) => void): void {
+        listenToSudokuEvent("FreezeEvent", cb)
+    }
+}
+
+class SudokuSolvedEvent {
+    emit(): void {
+        emitSudokuEvent("SudokuSolvedEvent", this)
+    }
+
+    static listen(cb: (event: SudokuSolvedEvent) => void): void {
+        listenToSudokuEvent("SudokuSolvedEvent", cb)
+    }
+}
+
+type SudokuEventName = "CursorMoveEvent" | "ValueSetEvent" | "FreezeEvent" | "SudokuSolvedEvent"
+type SudokuEvent = CursorMoveEvent | ValueSetEvent | FreezeEvent | SudokuSolvedEvent
+
+function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
+    name: SudokuEventName,
+    event: SudokuEventT
+): void {
+    const _event = new CustomEvent(name, {detail: event})
+    document.dispatchEvent(_event)
+}
+
+function listenToSudokuEvent<SudokuEventT extends SudokuEvent>(
+    name: SudokuEventName,
+    cb: (event: SudokuEventT) => void
+): void {
+    document.addEventListener(
+        name,
+        (event: Event) => {
+            if (!(event instanceof CustomEvent)) {
+                throw new Error(`Expected CustomEvent.`)
+            }
+            cb(event.detail)
+        },
+    )
+}
+
 class Sudoku {
     board: number[]
     readonly size: number
@@ -15,60 +105,73 @@ class Sudoku {
         }
     }
 
-    freezeCell(row: number, col: number): void {
-        const idx = this._get_idx(row, col)
-        if (this.board[idx] == 0) {
-            throw new Error(`Can't freeze an empty cell: (${row}, ${col})`)
+    freezeCell(pos: number): void {
+        if (this.board[pos] == 0) {
+            const [row, col] = [Math.floor(pos/this.sizeSq), pos % this.sizeSq]
+            throw new Error(`Can't freeze an empty cell at pos: ${pos} (${row}, ${col})`)
         }
-        this.is_frozen[idx] = true
+        this.is_frozen[pos] = true
+        new FreezeEvent(pos, true).emit()
     }
 
-    unfreezeCell(row: number, col: number): void {
-        const idx = this._get_idx(row, col)
-        this.is_frozen[idx] = false
+    unfreezeCell(pos: number): void {
+        this.is_frozen[pos] = false
+        new FreezeEvent(pos, false).emit()
     }
 
-    isCellFrozen(row: number, col: number): boolean {
-        const idx = this._get_idx(row, col)
-        return this.is_frozen[idx]
+    isCellFrozen(pos: number): boolean {
+        return this.is_frozen[pos]
     }
 
-    setCell(row: number, col: number, val: number): void {
+    setCell(pos: number, val: number): void {
         if (this.sizeSq < val || val < 1) {
             throw new Error(`Unexpected cell value: ${val}.`)
         }
-        const idx = this._get_idx(row, col)
-        if (this.is_frozen[idx]) {
-            throw new Error(`Can't change a frozen cell: (${row}, ${col})`)
+        if (this.is_frozen[pos]) {
+            const [row, col] = this._getRowAndCol(pos)
+            throw new Error(`Can't change a frozen cell at pos: ${pos} (${row}, ${col})`)
         }
-        this.board[idx] = val
+        this.board[pos] = val
+        new ValueSetEvent(pos, val).emit()
     }
 
-    getCell(row: number, col: number): number {
-        const idx = this._get_idx(row, col)
-        return this.board[idx]
+    getCell(pos: number): number {
+        return this.board[pos]
     }
 
-    clearCell(row: number, col: number): void {
-        const idx = this._get_idx(row, col)
-        if (this.is_frozen[idx]) {
-            throw new Error(`Can't change a frozen cell: (${row}, ${col})`)
+    clearCell(pos: number): void {
+        if (this.is_frozen[pos]) {
+            const [row, col] = this._getRowAndCol(pos)
+            throw new Error(`Can't change a frozen cell at pos: ${pos} (${row}, ${col})`)
         }
-        this.board[idx] = 0
+        this.board[pos] = 0
+        new ValueSetEvent(pos, 0).emit()
     }
 
     clear(): void {
         for (let i = 0; i < this.board.length; ++i) {
-            this.board[i] = 0
+            if (this.board[i] != 0) {
+                this.board[i] = 0
+                new ValueSetEvent(i, 0).emit()
+            }
         }
         for (let i = 0; i < this.is_frozen.length; ++i) {
-            this.is_frozen[i] = false
+            if (this.is_frozen[i]) {
+                this.is_frozen[i] = false
+                new FreezeEvent(i, false).emit()
+            }
         }
     }
 
     isDone(): boolean {
-        console.log("isdone?")
+        const result = this._isDone()
+        if (result) {
+            new SudokuSolvedEvent().emit()
+        }
+        return result
+    }
 
+    _isDone(): boolean {
         let seen: boolean[] = new Array(this.sizeSq)
 
         const clearSeen = () => {
@@ -101,8 +204,6 @@ class Sudoku {
             clearSeen()
         }
 
-        console.log("rows ok")
-
         // cols
         for (let colStartIdx = 0; colStartIdx < this.sizeSq; ++colStartIdx) {
             for (let i = 0; i < this.sizeSq; ++i) {
@@ -115,9 +216,6 @@ class Sudoku {
             }
             clearSeen()
         }
-
-        console.log("cols ok")
-
 
         // squares
         for (let sqRowIdx = 0; sqRowIdx < this.board.length; sqRowIdx += this.size ** 3) {
@@ -140,29 +238,77 @@ class Sudoku {
         return true
     }
 
-    _get_idx(row: number, col: number): number {
-        const idx = (row * this.sizeSq) + col
-        if (idx >= this.board.length) {
-            throw new Error(`Invalid row and col combination: ${row}, ${col}.`)
+    _getRowAndCol(pos: number): [number, number] {
+        return [Math.floor(pos/this.sizeSq), pos % this.sizeSq]
+    }
+}
+
+
+class RichSudoku {
+    sudoku: Sudoku
+    cursor: number // -1 for no cursor
+
+    constructor(sudoku: Sudoku, cursor: number) {
+        this.sudoku = sudoku
+        this.cursor = cursor
+    }
+
+    setCursor(newCursor: number): void {
+        this.cursor = newCursor
+    }
+
+    unsetCursor(): void {
+        this.cursor = -1
+    }
+
+    moveCursorRight(): void {
+        const on_right_edge = ((this.cursor + 1) % this.sudoku.sizeSq) == 0
+        if (!on_right_edge) {
+            const oldCursor = this.cursor
+            ++this.cursor
+            new CursorMoveEvent(oldCursor, this.cursor).emit()
         }
-        return idx
+    }
+
+    moveCursorLeft(): void {
+        const on_left_edge = (this.cursor % this.sudoku.sizeSq) == 0
+        if (!on_left_edge) {
+            const oldCursor = this.cursor
+            --this.cursor
+            new CursorMoveEvent(oldCursor, this.cursor).emit()
+        }
+    }
+
+    moveCursorUp() {
+        const in_first_row = this.cursor < this.sudoku.sizeSq
+        if (!in_first_row) {
+            const oldCursor = this.cursor
+            this.cursor -= this.sudoku.sizeSq
+            new CursorMoveEvent(oldCursor, this.cursor).emit()
+        }
+    }
+
+    moveCursorDown(): void {
+        const in_last_row = this.cursor >= (this.sudoku.sizeSq ** 2) - this.sudoku.sizeSq
+        if (!in_last_row) {
+            const oldCursor = this.cursor
+            this.cursor += this.sudoku.sizeSq
+            new CursorMoveEvent(oldCursor, this.cursor).emit()
+        }
     }
 }
 
 
-const sudoku = new Sudoku(3)
-let currentSudokuCellId = ""
+const richSudoku = new RichSudoku(new Sudoku(3), 0)
 
 
-function sudokuCellIdToRowAndCol(cellId: string): [number, number] {
-    if (cellId == "") {
-        throw new Error("currentSudokuCellId not set")
-    }
-    const num = parseInt(cellId.split("-")[2])
-    return [Math.floor(num / sudoku.sizeSq), num % sudoku.sizeSq]
+function getPosFromCellId(cellId: string): number {
+    return parseInt(cellId.split("-")[2])
 }
 
-function getSudokuCell(cellId: string): HTMLDivElement {
+
+function getSudokuCell(pos: number): HTMLDivElement {
+    const cellId = "sudoku-cell-" + pos
     const el = document.getElementById(cellId)
     if (el == null) {
         throw new Error("Could not find document with id: '" + cellId + "'.")
@@ -173,56 +319,67 @@ function getSudokuCell(cellId: string): HTMLDivElement {
     return el
 }
 
-function getSudokuCellAt(row: number, col: number): HTMLDivElement {
-    const cellId = "sudoku-cell-" + ((row * sudoku.sizeSq) + col)
-    return getSudokuCell(cellId)
-}
 
-function highlightSudokuCell(cellId: string): void {
-    if (currentSudokuCellId != "") {
-        const cell = getSudokuCell(currentSudokuCellId)
-        cell.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
-        const [row, col] = sudokuCellIdToRowAndCol(cell.id)
-        if (sudoku.isCellFrozen(row, col)) {
-            cell.classList.add("sudoku-cell-frozen")
+function highlightSudokuCell(cell: HTMLDivElement): void {
+    if (richSudoku.cursor != -1) {
+        const cursorCell = getSudokuCell(richSudoku.cursor)
+        cursorCell.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
+        if (richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
+            cursorCell.classList.add("sudoku-cell-frozen")
         }
     }
-    const cell = getSudokuCell(cellId)
-    const [row, col] = sudokuCellIdToRowAndCol(cell.id)
-    if (sudoku.isCellFrozen(row, col)) {
+    const newCursor = getPosFromCellId(cell.id)
+    if (richSudoku.sudoku.isCellFrozen(newCursor)) {
         cell.classList.remove("sudoku-cell-frozen")
         cell.classList.add("sudoku-cell-cursor-frozen")
     } else {
         cell.classList.add("sudoku-cell-cursor")
     }
-    currentSudokuCellId = cellId
+    richSudoku.cursor = newCursor
 }
 
 
 document.onkeydown = (e: KeyboardEvent) => {
-    if (currentSudokuCellId == "") {
+    if (richSudoku.cursor == -1) {
         return
     }
-    const [row, col] = sudokuCellIdToRowAndCol(currentSudokuCellId)
-
-    if (e.key == "Backspace" || e.key == "Delete") {
-        sudoku.clearCell(row, col)
-        const cell = getSudokuCell(currentSudokuCellId)
-        cell.innerText = ""
-    } else if ("0" <= e.key && e.key <= "9") {
-        if (!sudoku.isCellFrozen(row, col)) {
-            sudoku.setCell(row, col, parseInt(e.key))
-            const cell = getSudokuCell(currentSudokuCellId)
-            cell.innerText = e.key
-        }
-        if (sudoku.isDone()) {
-            setTimeout(
-                function() { alert("you win!") },
-                50
-            )
-        }
+    switch (e.key) {
+        case "Backspace":
+        case "Delete":
+            if (!richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
+                richSudoku.sudoku.clearCell(richSudoku.cursor)
+            }
+            break
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+            if (parseInt(e.key) > richSudoku.sudoku.sizeSq) {
+                break
+            }
+            if (!richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
+                richSudoku.sudoku.setCell(richSudoku.cursor, parseInt(e.key))
+            }
+            richSudoku.sudoku.isDone()
+            break
+        case "ArrowLeft":
+            richSudoku.moveCursorLeft()
+            break
+        case "ArrowRight":
+            richSudoku.moveCursorRight()
+            break
+        case "ArrowUp":
+            richSudoku.moveCursorUp()
+            break
+        case "ArrowDown":
+            richSudoku.moveCursorDown()
+            break
     }
-
 };
 
 
@@ -238,40 +395,64 @@ function onLoad(): void {
         0, 1, 0, 0, 5, 8, 7, 0, 0,
         7, 0, 0, 9, 1, 6, 0, 0, 0
     ]
-    let idx = 0
-    for (let r = 0; r < sudoku.sizeSq; ++r) {
-        for (let c = 0; c < sudoku.sizeSq; ++c) {
-            if (board[idx] != 0) {
-                sudoku.setCell(r, c, board[idx])
-                sudoku.freezeCell(r, c)
-            }
-            ++idx
-        }
-    }
-
-    refreshSudoku()
-}
-
-
-function refreshSudoku(): void {
-    currentSudokuCellId = ""
-    for (let r = 0; r < sudoku.sizeSq; ++r) {
-        for (let c = 0; c < sudoku.sizeSq; ++c) {
-            let htmlElem = getSudokuCellAt(r, c)
-            htmlElem.innerText = ""
-            const cellVal = sudoku.getCell(r, c)
-            if (cellVal != 0) {
-                htmlElem.innerText = cellVal.toString()
-                let cellElem = getSudokuCellAt(r, c)
-                if (sudoku.isCellFrozen(r, c)) {
-                    cellElem.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
-                    cellElem.classList.add("sudoku-cell-frozen")
-                } else {
-                    cellElem.classList.remove(
-                        "sudoku-cell-cursor", "sudoku-cell-cursor-frozen", "sudoku-cell-frozen"
-                    )
-                }
-            }
+    for (let pos = 0; pos < richSudoku.sudoku.sizeSq ** 2; ++pos) {
+        if (board[pos] != 0) {
+            richSudoku.sudoku.setCell(pos, board[pos])
+            richSudoku.sudoku.freezeCell(pos)
         }
     }
 }
+
+
+function showCursor(pos: number): void {
+    if (pos < 0) { return }
+    let cell = getSudokuCell(pos)
+    if (richSudoku.sudoku.isCellFrozen(pos)) {
+        cell.classList.remove("sudoku-cell-frozen")
+        cell.classList.add("sudoku-cell-cursor-frozen")
+    } else {
+        cell.classList.add("sudoku-cell-cursor")
+    }
+}
+
+function hideCursor(pos: number): void {
+    if (pos < 0) { return }
+    let cell = getSudokuCell(pos)
+    if (richSudoku.sudoku.isCellFrozen(pos)) {
+        cell.classList.remove("sudoku-cell-cursor-frozen")
+        cell.classList.add("sudoku-cell-frozen")
+    } else {
+        cell.classList.remove("sudoku-cell-cursor")
+    }
+}
+
+CursorMoveEvent.listen((event: CursorMoveEvent) => {
+    hideCursor(event.from_pos); showCursor(event.to_pos)
+})
+
+
+ValueSetEvent.listen((event: ValueSetEvent) => {
+    const cell = getSudokuCell(event.pos)
+    if (event.value == 0) {
+        cell.innerText = ""
+    } else {
+        cell.innerText = event.value.toString()
+    }
+})
+
+
+FreezeEvent.listen((event: FreezeEvent) => {
+    const cell = getSudokuCell(event.pos)
+    cell.classList.remove("sudoku-cell-frozen", "sudoku-cell-cursor-frozen")
+    if (event.frozen) {
+        cell.classList.add("sudoku-cell-frozen")
+    }
+    showCursor(richSudoku.cursor)
+})
+
+SudokuSolvedEvent.listen((event: SudokuSolvedEvent) => {
+    setTimeout(
+        function() { alert("you win!") },
+        50
+    )
+})
