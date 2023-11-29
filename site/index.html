@@ -7,25 +7,23 @@
     <title>Sudoku</title>
     <link rel="stylesheet" href="./style.css">
   </head>
-  <body onload="onLoad()">
-    <main>
-        <h1>Sudoku</h1>
-        <table style="width: 675px">
-            {{- range $row := .Rows}}
-                <tr style="height: 75px;{{$row.Style}}">
-                    {{- range $id := $row.Ids}}
-                        <td id="{{$id.TableData}}" style="{{$id.Style}}">
-                            <textarea
-                                class="sudokuInput" id="{{$id.TextArea}}" rows="1"
-                                minlength="0" maxlength="1"
-                                oninput="onInput(this)"
-                            ></textarea>
-                        </td>
+  <body class="flex-center" onload="onLoad()">
+    <div class="main">
+        <h1 style="font-size: 4em">Sudoku</h1>
+        <div class="sudoku-table">
+            {{- range $row := .Sudoku.Rows}}
+                <div class="sudoku-row {{if $row.HorizBorder}}sudoku-horiz-border{{end}}">
+                    {{- range $cell := $row.Cells}}
+                        <div
+                            id="{{$cell.Id}}"
+                            class="sudoku-cell flex-center {{if $cell.VertBorder}}sudoku-vert-border{{end}}"
+                            onclick="highlightSudokuCell(this.id)"
+                        ></div>
                     {{- end}}
-                </tr>
+                </div>
             {{- end}}
-        </table>
-    </main>
+        </div>
+    </div>
 	<script src="index.js"></script>
   </body>
 </html>

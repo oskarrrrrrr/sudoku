@@ -20,14 +20,24 @@ type Ids struct {
     Style template.CSS
 }
 
-type Row struct {
-	Ids []Ids
-    Style template.CSS
+type SudokuCell struct {
+    Id string
+    VertBorder bool
+}
+
+type SudokuRow struct {
+    Cells []SudokuCell
+    HorizBorder bool
+}
+
+type Sudoku struct {
+    Rows []SudokuRow
 }
 
 type TemplateInput struct {
-	Rows []Row
+    Sudoku Sudoku
 }
+
 
 func readTemplateString(file_name string) string {
 	f, err := os.Open(file_name)
@@ -38,32 +48,27 @@ func readTemplateString(file_name string) string {
 	return string(templateStringBytes[:])
 }
 
-func generateTemplateInput() TemplateInput {
-	var rows [9]Row
+func generateTemplateInput(n int) TemplateInput {
+    rows := make([]SudokuRow, n*n)
 	for rowIdx := range rows {
 		row := &rows[rowIdx]
-        if (rowIdx + 1) % 3 == 0 {
-            row.Style = template.CSS("border-bottom: 3px solid black")
+        if (rowIdx + 1) % n == 0 {
+            row.HorizBorder = true
         }
-		row.Ids = make([]Ids, 9)
-		for colIdx := 0; colIdx < 9; colIdx++ {
-            rowStr := strconv.Itoa(rowIdx)
-            colStr := strconv.Itoa(colIdx)
-			row.Ids[colIdx] = Ids {
-                TableData: "sudoku_td." + rowStr + "." + colStr,
-                TextArea: "c." + rowStr + "." + colStr,
-            }
-            if (colIdx + 1) % 3 == 0 {
-                row.Ids[colIdx].Style = template.CSS("border-right: 3px solid black")
+		row.Cells = make([]SudokuCell, n*n)
+		for colIdx := 0; colIdx < n*n; colIdx++ {
+			row.Cells[colIdx].Id = "sudoku-cell-" + strconv.Itoa((rowIdx * n * n) + colIdx)
+            if (colIdx + 1) % n == 0 {
+                row.Cells[colIdx].VertBorder = true
             }
 		}
 	}
-	return TemplateInput{Rows: rows[:]}
+	return TemplateInput{Sudoku{Rows: rows[:]}}
 }
 
 func main() {
 	templateString := readTemplateString("site/index.html")
-	input := generateTemplateInput()
+	input := generateTemplateInput(3)
 	temp, err := template.New("index").Parse(templateString)
 	check(err)
 

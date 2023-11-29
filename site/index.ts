@@ -1,19 +1,17 @@
 class Sudoku {
     board: number[]
-    readonly rows: number
-    readonly cols: number
+    readonly size: number
+    readonly sizeSq: number
     is_frozen: boolean[]
 
-    constructor() {
-        this.rows = 9
-        this.cols = 9
+    constructor(size: number) {
+        this.size = size
+        this.sizeSq = size ** 2
         this.board = []
         this.is_frozen = []
-        for (let r = 0; r < this.rows; ++r) {
-            for (let c = 0; c < this.cols; ++c) {
-                this.board.push(0)
-                this.is_frozen.push(false)
-            }
+        for (let i = 0; i < this.sizeSq ** 2; ++i) {
+            this.board.push(0)
+            this.is_frozen.push(false)
         }
     }
 
@@ -36,7 +34,7 @@ class Sudoku {
     }
 
     setCell(row: number, col: number, val: number): void {
-        if (9 < val || val < 1) {
+        if (this.sizeSq < val || val < 1) {
             throw new Error(`Unexpected cell value: ${val}.`)
         }
         const idx = this._get_idx(row, col)
@@ -69,9 +67,9 @@ class Sudoku {
     }
 
     isDone(): boolean {
-        console.log("checking if done")
+        console.log("isdone?")
 
-        let seen: boolean[] = new Array(9)
+        let seen: boolean[] = new Array(this.sizeSq)
 
         const clearSeen = () => {
             for (let i = 0; i < seen.length; ++i) {
@@ -91,8 +89,8 @@ class Sudoku {
         clearSeen()
 
         // rows
-        for (let rowStartIdx = 0; rowStartIdx < this.board.length; rowStartIdx += 9) {
-            for (let i = 0; i < this.cols; ++i) {
+        for (let rowStartIdx = 0; rowStartIdx < this.board.length; rowStartIdx += this.sizeSq) {
+            for (let i = 0; i < this.sizeSq; ++i) {
                 const val = this.board[rowStartIdx + i]
                 if (val == 0) { return false }
                 seen[val - 1] = true
@@ -103,11 +101,12 @@ class Sudoku {
             clearSeen()
         }
 
+        console.log("rows ok")
 
         // cols
-        for (let colStartIdx = 0; colStartIdx < this.cols; ++colStartIdx) {
-            for (let i = 0; i < this.rows; ++i) {
-                const val = this.board[colStartIdx + (9 * i)]
+        for (let colStartIdx = 0; colStartIdx < this.sizeSq; ++colStartIdx) {
+            for (let i = 0; i < this.sizeSq; ++i) {
+                const val = this.board[colStartIdx + (this.sizeSq * i)]
                 if (val == 0) { return false }
                 seen[val - 1] = true
             }
@@ -117,20 +116,20 @@ class Sudoku {
             clearSeen()
         }
 
+        console.log("cols ok")
+
+
         // squares
-        for (let sqRowIdx = 0; sqRowIdx < this.board.length; sqRowIdx += 27) {
-            for (let sqInRowIdx = 0; sqInRowIdx < this.cols; sqInRowIdx += 3) {
-                console.log(sqRowIdx, sqInRowIdx)
-                for (let r = 0; r < 3; ++r) {
-                    for (let c = 0; c < 3; ++c) {
-                        const idx = sqRowIdx + sqInRowIdx + (r * this.cols) + c
-                        console.log(idx)
+        for (let sqRowIdx = 0; sqRowIdx < this.board.length; sqRowIdx += this.size ** 3) {
+            for (let sqInRowIdx = 0; sqInRowIdx < this.sizeSq; sqInRowIdx += this.size) {
+                for (let r = 0; r < this.size; ++r) {
+                    for (let c = 0; c < this.size; ++c) {
+                        const idx = sqRowIdx + sqInRowIdx + (r * this.sizeSq) + c
                         const val = this.board[idx]
                         if (val == 0) { return false }
                         seen[val - 1] = true
                     }
                 }
-                console.log(seen)
                 if (!allSeen()) {
                     return false
                 }
@@ -142,7 +141,7 @@ class Sudoku {
     }
 
     _get_idx(row: number, col: number): number {
-        const idx = (row * this.cols) + col
+        const idx = (row * this.sizeSq) + col
         if (idx >= this.board.length) {
             throw new Error(`Invalid row and col combination: ${row}, ${col}.`)
         }
@@ -151,7 +150,80 @@ class Sudoku {
 }
 
 
-const sudoku = new Sudoku()
+const sudoku = new Sudoku(3)
+let currentSudokuCellId = ""
+
+
+function sudokuCellIdToRowAndCol(cellId: string): [number, number] {
+    if (cellId == "") {
+        throw new Error("currentSudokuCellId not set")
+    }
+    const num = parseInt(cellId.split("-")[2])
+    return [Math.floor(num / sudoku.sizeSq), num % sudoku.sizeSq]
+}
+
+function getSudokuCell(cellId: string): HTMLDivElement {
+    const el = document.getElementById(cellId)
+    if (el == null) {
+        throw new Error("Could not find document with id: '" + cellId + "'.")
+    }
+    if (!(el instanceof HTMLDivElement)) {
+        throw new Error("Expected cell element to be of type 'HTMLTextAreaElement'.")
+    }
+    return el
+}
+
+function getSudokuCellAt(row: number, col: number): HTMLDivElement {
+    const cellId = "sudoku-cell-" + ((row * sudoku.sizeSq) + col)
+    return getSudokuCell(cellId)
+}
+
+function highlightSudokuCell(cellId: string): void {
+    if (currentSudokuCellId != "") {
+        const cell = getSudokuCell(currentSudokuCellId)
+        cell.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
+        const [row, col] = sudokuCellIdToRowAndCol(cell.id)
+        if (sudoku.isCellFrozen(row, col)) {
+            cell.classList.add("sudoku-cell-frozen")
+        }
+    }
+    const cell = getSudokuCell(cellId)
+    const [row, col] = sudokuCellIdToRowAndCol(cell.id)
+    if (sudoku.isCellFrozen(row, col)) {
+        cell.classList.remove("sudoku-cell-frozen")
+        cell.classList.add("sudoku-cell-cursor-frozen")
+    } else {
+        cell.classList.add("sudoku-cell-cursor")
+    }
+    currentSudokuCellId = cellId
+}
+
+
+document.onkeydown = (e: KeyboardEvent) => {
+    if (currentSudokuCellId == "") {
+        return
+    }
+    const [row, col] = sudokuCellIdToRowAndCol(currentSudokuCellId)
+
+    if (e.key == "Backspace" || e.key == "Delete") {
+        sudoku.clearCell(row, col)
+        const cell = getSudokuCell(currentSudokuCellId)
+        cell.innerText = ""
+    } else if ("0" <= e.key && e.key <= "9") {
+        if (!sudoku.isCellFrozen(row, col)) {
+            sudoku.setCell(row, col, parseInt(e.key))
+            const cell = getSudokuCell(currentSudokuCellId)
+            cell.innerText = e.key
+        }
+        if (sudoku.isDone()) {
+            setTimeout(
+                function() { alert("you win!") },
+                50
+            )
+        }
+    }
+
+};
 
 
 function onLoad(): void {
@@ -167,8 +239,8 @@ function onLoad(): void {
         7, 0, 0, 9, 1, 6, 0, 0, 0
     ]
     let idx = 0
-    for (let r = 0; r < sudoku.rows; ++r) {
-        for (let c = 0; c < sudoku.cols; ++c) {
+    for (let r = 0; r < sudoku.sizeSq; ++r) {
+        for (let c = 0; c < sudoku.sizeSq; ++c) {
             if (board[idx] != 0) {
                 sudoku.setCell(r, c, board[idx])
                 sudoku.freezeCell(r, c)
@@ -181,86 +253,25 @@ function onLoad(): void {
 }
 
 
-function getSudokuCellText(row: number, col: number): HTMLTextAreaElement {
-    const cellId = `c.${row}.${col}`
-    const el = document.getElementById(cellId)
-    if (el == null) {
-        throw new Error("Could not find document with id: '" + cellId + "'.")
-    }
-    if (!(el instanceof HTMLTextAreaElement)) {
-        throw new Error("Expected cell element to be of type 'HTMLTextAreaElement'.")
-    }
-    return el
-}
-
-function getSudokuCell(row: number, col: number): HTMLTableCellElement {
-    const cellId = `sudoku_td.${row}.${col}`
-    const el = document.getElementById(cellId)
-    if (el == null) {
-        throw new Error("Could not find document with id: '" + cellId + "'.")
-    }
-    if (!(el instanceof HTMLTableCellElement)) {
-        throw new Error("Expected cell element to be of type 'HTMLTableElement'.")
-    }
-    return el
-}
-
-
 function refreshSudoku(): void {
-    for (let r = 0; r < sudoku.rows; ++r) {
-        for (let c = 0; c < sudoku.cols; ++c) {
-            let htmlElem = getSudokuCellText(r, c)
-            htmlElem.disabled = false
+    currentSudokuCellId = ""
+    for (let r = 0; r < sudoku.sizeSq; ++r) {
+        for (let c = 0; c < sudoku.sizeSq; ++c) {
+            let htmlElem = getSudokuCellAt(r, c)
+            htmlElem.innerText = ""
             const cellVal = sudoku.getCell(r, c)
             if (cellVal != 0) {
-                htmlElem.value = cellVal.toString()
-                let cellElem = getSudokuCell(r, c)
+                htmlElem.innerText = cellVal.toString()
+                let cellElem = getSudokuCellAt(r, c)
                 if (sudoku.isCellFrozen(r, c)) {
-                    htmlElem.disabled = true
-                    cellElem.style.background = "#dddddd"
+                    cellElem.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
+                    cellElem.classList.add("sudoku-cell-frozen")
                 } else {
-                    cellElem.style.background = "#ffffff"
+                    cellElem.classList.remove(
+                        "sudoku-cell-cursor", "sudoku-cell-cursor-frozen", "sudoku-cell-frozen"
+                    )
                 }
             }
         }
     }
-}
-
-
-function onInput(textarea: HTMLTextAreaElement): void {
-    const elId = textarea.id
-    const [_, rowStr, colStr] = elId.split(".")
-    const [row, col] = [parseInt(rowStr), parseInt(colStr)]
-
-    if (sudoku.isCellFrozen(row, col)) {
-        const val = sudoku.getCell(row, col)
-        console.assert(val != 0)
-        textarea.value = val.toString()
-        return
-    }
-
-    const val = textarea.value
-    if (!('1' <= val && val <= '9')) {
-        textarea.value = ""
-        return
-    }
-    if (val == "") {
-        sudoku.clearCell(row, col)
-    } else {
-        sudoku.setCell(row, col, parseInt(val))
-    }
-
-    setTimeout(
-        function() {
-            if (sudoku.isDone()) {
-                alert("you win!")
-                const activeElement = document.activeElement;
-                if (activeElement != null) {
-                    // @ts-ignore
-                    activeElement.blur()
-                }
-            }
-        },
-        50
-    )
 }
