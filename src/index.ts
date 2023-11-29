@@ -62,8 +62,17 @@ class SudokuSolvedEvent {
     }
 }
 
-type SudokuEventName = "CursorMoveEvent" | "ValueSetEvent" | "FreezeEvent" | "SudokuSolvedEvent"
-type SudokuEvent = CursorMoveEvent | ValueSetEvent | FreezeEvent | SudokuSolvedEvent
+type SudokuEventName =
+    "CursorMoveEvent"
+    | "ValueSetEvent"
+    | "FreezeEvent"
+    | "SudokuSolvedEvent"
+
+type SudokuEvent =
+    CursorMoveEvent
+    | ValueSetEvent
+    | FreezeEvent
+    | SudokuSolvedEvent
 
 function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
     name: SudokuEventName,
@@ -251,14 +260,21 @@ class RichSudoku {
     constructor(sudoku: Sudoku, cursor: number) {
         this.sudoku = sudoku
         this.cursor = cursor
+        if (this.cursor >= 0) {
+            new CursorMoveEvent(-1, this.cursor).emit()
+        }
     }
 
     setCursor(newCursor: number): void {
+        const oldCursor = this.cursor
         this.cursor = newCursor
+        new CursorMoveEvent(oldCursor, this.cursor).emit()
     }
 
     unsetCursor(): void {
+        const oldCursor = this.cursor
         this.cursor = -1
+        new CursorMoveEvent(oldCursor, -1).emit()
     }
 
     moveCursorRight(): void {
@@ -298,14 +314,9 @@ class RichSudoku {
     }
 }
 
-
-const richSudoku = new RichSudoku(new Sudoku(3), 0)
-
-
 function getPosFromCellId(cellId: string): number {
     return parseInt(cellId.split("-")[2])
 }
-
 
 function getSudokuCell(pos: number): HTMLDivElement {
     const cellId = "sudoku-cell-" + pos
@@ -319,25 +330,10 @@ function getSudokuCell(pos: number): HTMLDivElement {
     return el
 }
 
-
 function highlightSudokuCell(cell: HTMLDivElement): void {
-    if (richSudoku.cursor != -1) {
-        const cursorCell = getSudokuCell(richSudoku.cursor)
-        cursorCell.classList.remove("sudoku-cell-cursor", "sudoku-cell-cursor-frozen")
-        if (richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
-            cursorCell.classList.add("sudoku-cell-frozen")
-        }
-    }
     const newCursor = getPosFromCellId(cell.id)
-    if (richSudoku.sudoku.isCellFrozen(newCursor)) {
-        cell.classList.remove("sudoku-cell-frozen")
-        cell.classList.add("sudoku-cell-cursor-frozen")
-    } else {
-        cell.classList.add("sudoku-cell-cursor")
-    }
-    richSudoku.cursor = newCursor
+    richSudoku.setCursor(newCursor)
 }
-
 
 document.onkeydown = (e: KeyboardEvent) => {
     if (richSudoku.cursor == -1) {
@@ -382,7 +378,6 @@ document.onkeydown = (e: KeyboardEvent) => {
     }
 };
 
-
 function onLoad(): void {
     const board = [
         0, 0, 0, 1, 0, 5, 0, 0, 3,
@@ -403,33 +398,21 @@ function onLoad(): void {
     }
 }
 
-
 function showCursor(pos: number): void {
     if (pos < 0) { return }
     let cell = getSudokuCell(pos)
-    if (richSudoku.sudoku.isCellFrozen(pos)) {
-        cell.classList.remove("sudoku-cell-frozen")
-        cell.classList.add("sudoku-cell-cursor-frozen")
-    } else {
-        cell.classList.add("sudoku-cell-cursor")
-    }
+    cell.classList.add("sudoku-cell-cursor")
 }
 
 function hideCursor(pos: number): void {
     if (pos < 0) { return }
     let cell = getSudokuCell(pos)
-    if (richSudoku.sudoku.isCellFrozen(pos)) {
-        cell.classList.remove("sudoku-cell-cursor-frozen")
-        cell.classList.add("sudoku-cell-frozen")
-    } else {
-        cell.classList.remove("sudoku-cell-cursor")
-    }
+    cell.classList.remove("sudoku-cell-cursor")
 }
 
 CursorMoveEvent.listen((event: CursorMoveEvent) => {
     hideCursor(event.from_pos); showCursor(event.to_pos)
 })
-
 
 ValueSetEvent.listen((event: ValueSetEvent) => {
     const cell = getSudokuCell(event.pos)
@@ -440,19 +423,22 @@ ValueSetEvent.listen((event: ValueSetEvent) => {
     }
 })
 
-
 FreezeEvent.listen((event: FreezeEvent) => {
     const cell = getSudokuCell(event.pos)
-    cell.classList.remove("sudoku-cell-frozen", "sudoku-cell-cursor-frozen")
     if (event.frozen) {
         cell.classList.add("sudoku-cell-frozen")
+    } else {
+        cell.classList.remove("sudoku-cell-frozen")
     }
-    showCursor(richSudoku.cursor)
 })
 
-SudokuSolvedEvent.listen((event: SudokuSolvedEvent) => {
+SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
     setTimeout(
         function() { alert("you win!") },
         50
     )
 })
+
+// must be initialized after event handlers so that they get triggered
+// on any events emitted in the constructor
+const richSudoku = new RichSudoku(new Sudoku(3), 0)

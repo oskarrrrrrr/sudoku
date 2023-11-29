@@ -9,6 +9,8 @@
 }
 
 .sudoku-table {
+    position: relative;
+
     width: 95vw;
     max-width: 800px;
 
@@ -37,12 +39,12 @@
     background: #ADD8E6;
 }
 
-.sudoku-cell-cursor-frozen {
-    background: #4D759A;
-}
-
 .sudoku-cell-frozen {
     background: #DDDDDD;
+}
+
+.sudoku-cell-cursor.sudoku-cell-frozen {
+    background: #4D759A;
 }
 
 .sudoku-vert-border {

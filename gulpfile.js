@@ -24,7 +24,7 @@ function tsc(cb) {
 }
 
 exports.watch = function() {
-    watch("src/build.go", series(build_builder, html))
+    watch("src/build.go", series(build, html))
     watch("src/*.html", html)
     watch("src/*.css", css)
     watch("src/*.ts", tsc)
