@@ -370,17 +370,32 @@ document.onkeydown = (e: KeyboardEvent) => {
     }
 };
 
+function onDigitButtonClick(btn: HTMLDivElement): void {
+    if (!(btn instanceof HTMLDivElement)) {
+        throw new Error("Expected HTMLDivElement")
+    }
+    if (richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
+        return
+    }
+    const suffix = btn.id.split("-")[2]
+    if (suffix == "x") {
+        richSudoku.sudoku.clearCell(richSudoku.cursor)
+    } else {
+        richSudoku.sudoku.setCell(richSudoku.cursor, parseInt(suffix))
+    }
+}
+
 function onLoad(): void {
     const board = [
-        0, 0, 0, 1, 0, 5, 0, 0, 3,
-        0, 0, 3, 7, 6, 0, 0, 4, 0,
-        2, 0, 0, 0, 8, 0, 0, 7, 1,
-        0, 3, 2, 0, 0, 9, 0, 0, 4,
-        0, 0, 8, 0, 0, 0, 3, 0, 0,
-        9, 0, 0, 5, 0, 0, 2, 8, 0,
-        6, 8, 0, 0, 3, 0, 0, 0, 2,
-        0, 1, 0, 0, 0, 8, 7, 0, 0,
-        7, 0, 0, 9, 1, 6, 0, 0, 0
+        0, 0, 0, 0, 8, 4, 0, 0, 6,
+        0, 0, 0, 0, 0, 0, 0, 0, 4,
+        4, 8, 6, 0, 0, 0, 9, 7, 5,
+        9, 0, 5, 3, 0, 7, 0, 0, 0,
+        3, 2, 0, 0, 0, 0, 0, 5, 9,
+        0, 0, 0, 5, 0, 0, 3, 6, 0,
+        0, 4, 1, 8, 0, 0, 5, 0, 3,
+        5, 7, 0, 0, 0, 6, 0, 4, 0,
+        2, 0, 0, 4, 0, 0, 0, 0, 0
     ]
     for (let pos = 0; pos < richSudoku.sudoku.sizeSq ** 2; ++pos) {
         if (board[pos] != 0) {
@@ -433,4 +448,4 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 
 // must be initialized after event handlers so that they get triggered
 // on any events emitted in the constructor
-const richSudoku = new RichSudoku(new Sudoku(3), 0)
+const richSudoku = new RichSudoku(new Sudoku(3), 30)

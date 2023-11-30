@@ -1,3 +1,14 @@
+.sudoku-header {
+    font-size: 4em;
+    margin: 15px;
+}
+
+@media only screen and (max-width: 800px) {
+    .sudoku-header {
+        display: none;
+    }
+}
+
 .main {
     width: 95vw;
     max-width: 675px;
@@ -59,4 +70,31 @@
     justify-content: center;
     align-items: center;
     flex-direction: column;
+}
+
+.digit-btn-row {
+    width: 100%;
+    margin-top: 20px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.digit-btn {
+    background-color: #DDDDDD;
+
+    border: 1px solid black;
+    border-collapse: collapse;
+    border-radius: 5px;
+
+    width: 70px;
+    aspect-ratio: 1/1;
+
+    font-size: 2.8em;
+}
+
+.digit-btn:hover {
+    background-color: #ADD8E6;
+    cursor: pointer;
 }
