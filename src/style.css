@@ -1,18 +1,17 @@
 .main {
     width: 95vw;
-    max-width: 800px;
+    max-width: 675px;
 
     display: flex;
-    align-items: start;
+    align-items: center;
     flex-direction: column;
-    /* justify-content: space-evenly; */
 }
 
 .sudoku-table {
     position: relative;
 
     width: 95vw;
-    max-width: 800px;
+    max-width: 675px;
 
     border: 5px solid black;
     border-collapse: collapse;
@@ -29,7 +28,7 @@
     border: 1px solid black;
     border-collapse: collapse;
 
-    width: 100%;
+    width: 75px;
     aspect-ratio: 1/1;
 
     font-size: 2.8em;

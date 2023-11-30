@@ -346,15 +346,7 @@ document.onkeydown = (e: KeyboardEvent) => {
                 richSudoku.sudoku.clearCell(richSudoku.cursor)
             }
             break
-        case "1":
-        case "2":
-        case "3":
-        case "4":
-        case "5":
-        case "6":
-        case "7":
-        case "8":
-        case "9":
+        case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9":
             if (parseInt(e.key) > richSudoku.sudoku.sizeSq) {
                 break
             }
