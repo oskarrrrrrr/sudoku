@@ -34,6 +34,24 @@ class ValueSetEvent {
     }
 }
 
+class HintUpdateEvent {
+    pos: number
+    hints: boolean[]
+
+    constructor(pos: number, hints: boolean[]) {
+        this.pos = pos
+        this.hints = hints
+    }
+
+    emit(): void {
+        emitSudokuEvent("HintUpdateEvent", this)
+    }
+
+    static listen(cb: (event: HintUpdateEvent) => void): void {
+        listenToSudokuEvent("HintUpdateEvent", cb)
+    }
+}
+
 class FreezeEvent {
     pos: number
     frozen: boolean
@@ -65,12 +83,14 @@ class SudokuSolvedEvent {
 type SudokuEventName =
     "CursorMoveEvent"
     | "ValueSetEvent"
+    | "HintUpdateEvent"
     | "FreezeEvent"
     | "SudokuSolvedEvent"
 
 type SudokuEvent =
     CursorMoveEvent
     | ValueSetEvent
+    | HintUpdateEvent
     | FreezeEvent
     | SudokuSolvedEvent
 
@@ -252,10 +272,42 @@ class Sudoku {
     }
 }
 
+class Hints {
+    sudoku: Sudoku
+    hints: boolean[]
+
+    constructor(sudoku: Sudoku) {
+        this.sudoku = sudoku
+        this.hints = []
+        for (let i = 0; i < this.sudoku.size ** 6; ++i) {
+            this.hints.push(false)
+        }
+    }
+
+    toggle(pos: number, value: number): void {
+        this.sudoku.clearCell(pos)
+        const idx = pos * this.sudoku.sizeSq + value - 1
+        this.hints[idx] = !this.hints[idx]
+        new HintUpdateEvent(pos, this.get(pos)).emit()
+    }
+
+    clear(pos: number): void {
+        const start = pos * this.sudoku.sizeSq
+        for (let i = 0; i < this.sudoku.sizeSq; ++i) {
+            this.hints[start + i] = false
+        }
+    }
+
+    get(pos: number): boolean[] {
+        const start = pos * this.sudoku.sizeSq
+        return this.hints.slice(start, start + this.sudoku.sizeSq)
+    }
+}
 
 class RichSudoku {
     sudoku: Sudoku
     cursor: number // -1 for no cursor
+    hints: Hints
 
     constructor(sudoku: Sudoku, cursor: number) {
         this.sudoku = sudoku
@@ -263,6 +315,7 @@ class RichSudoku {
         if (this.cursor >= 0) {
             new CursorMoveEvent(-1, this.cursor).emit()
         }
+        this.hints = new Hints(sudoku)
     }
 
     setCursor(newCursor: number): void {
@@ -335,6 +388,39 @@ function highlightSudokuCell(cell: HTMLDivElement): void {
     richSudoku.setCursor(newCursor)
 }
 
+function handleClearCell() {
+    const cursor = richSudoku.cursor
+    if (richSudoku.sudoku.isCellFrozen(cursor)) {
+        return
+    }
+    if (richSudoku.sudoku.getCell(cursor) == 0) {
+        richSudoku.hints.clear(cursor)
+    } else {
+        richSudoku.sudoku.clearCell(cursor)
+    }
+    new HintUpdateEvent(cursor, richSudoku.hints.get(cursor)).emit()
+}
+
+function handleDigitInput(digit: number): void {
+    if (digit > richSudoku.sudoku.sizeSq) {
+        return
+    }
+    if (!richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
+        const inputMode = getInputMode()
+        switch (inputMode) {
+        case "normal":
+            richSudoku.sudoku.setCell(richSudoku.cursor, digit)
+            break;
+        case "hint":
+            richSudoku.hints.toggle(richSudoku.cursor, digit)
+            break;
+        default:
+            throw new Error(`Unexpected input mode: ${inputMode}`)
+        }
+        richSudoku.sudoku.isDone()
+    }
+}
+
 document.onkeydown = (e: KeyboardEvent) => {
     if (richSudoku.cursor == -1) {
         return
@@ -342,18 +428,10 @@ document.onkeydown = (e: KeyboardEvent) => {
     switch (e.key) {
         case "Backspace":
         case "Delete":
-            if (!richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
-                richSudoku.sudoku.clearCell(richSudoku.cursor)
-            }
+            handleClearCell()
             break
         case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9":
-            if (parseInt(e.key) > richSudoku.sudoku.sizeSq) {
-                break
-            }
-            if (!richSudoku.sudoku.isCellFrozen(richSudoku.cursor)) {
-                richSudoku.sudoku.setCell(richSudoku.cursor, parseInt(e.key))
-            }
-            richSudoku.sudoku.isDone()
+            handleDigitInput(parseInt(e.key))
             break
         case "ArrowLeft":
             richSudoku.moveCursorLeft()
@@ -367,6 +445,8 @@ document.onkeydown = (e: KeyboardEvent) => {
         case "ArrowDown":
             richSudoku.moveCursorDown()
             break
+        case "m":
+            toggleInputMode()
     }
 };
 
@@ -379,10 +459,75 @@ function onDigitButtonClick(btn: HTMLDivElement): void {
     }
     const suffix = btn.id.split("-")[2]
     if (suffix == "x") {
-        richSudoku.sudoku.clearCell(richSudoku.cursor)
+        handleClearCell()
     } else {
-        richSudoku.sudoku.setCell(richSudoku.cursor, parseInt(suffix))
+        handleDigitInput(parseInt(suffix))
     }
+}
+
+function getHintsHtml(hints: boolean[]): string {
+    function getHint(digit: number): string {
+        const d = digit > 0 ? digit.toString() : ""
+        return `<div class="hint flex-center">${d}</div>`
+    }
+
+    function getHintsRow(digits: number[]): string {
+        let result = `<div class="hint-row">`
+        for (const d of digits) {
+            result += getHint(hints[d-1] ? d : 0)
+        }
+        result += `</div>`
+        return result
+    }
+
+    return `
+        <div class="hint-wrapper">
+            ${getHintsRow([1,2,3])}
+            ${getHintsRow([4,5,6])}
+            ${getHintsRow([7,8,9])}
+        </div>
+    `
+}
+
+
+type InputMode = "normal" | "hint"
+
+function isInputMode(s: string): s is InputMode {
+    return s == "normal" || s == "hint"
+}
+
+function getInputModeDiv(): HTMLDivElement {
+    const inputModeDiv = document.getElementById("input-mode-button")
+    if (!(inputModeDiv instanceof HTMLDivElement)) {
+        throw new Error("Expected HTMLDivElement")
+    }
+    return inputModeDiv
+}
+
+function toggleInputMode() {
+    let inputModeDiv = getInputModeDiv()
+    switch (inputModeDiv.innerText) {
+    case "normal":
+        inputModeDiv.innerText = "hint"
+        break
+    case "hint":
+        inputModeDiv.innerText = "normal"
+        break
+    default:
+        throw new Error(`Unexpected input mode: ${inputModeDiv.innerText}`)
+    }
+}
+
+function getInputMode(): InputMode {
+    const inputModeDiv = document.getElementById("input-mode-button")
+    if (!(inputModeDiv instanceof HTMLDivElement)) {
+        throw new Error("Expected HTMLDivElement")
+    }
+    const text = inputModeDiv.innerText
+    if (isInputMode(text)) {
+        return text
+    }
+    throw new Error(`Expected input mode, got: ${text}`)
 }
 
 function onLoad(): void {
@@ -428,6 +573,11 @@ ValueSetEvent.listen((event: ValueSetEvent) => {
     } else {
         cell.innerText = event.value.toString()
     }
+})
+
+HintUpdateEvent.listen((event: HintUpdateEvent) => {
+    let cell = getSudokuCell(event.pos)
+    cell.innerHTML = getHintsHtml(event.hints)
 })
 
 FreezeEvent.listen((event: FreezeEvent) => {

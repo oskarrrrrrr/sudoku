@@ -42,7 +42,7 @@
     width: 75px;
     aspect-ratio: 1/1;
 
-    font-size: 2.8em;
+    font-size: 2.5em;
 }
 
 .sudoku-cell-cursor {
@@ -65,11 +65,39 @@
     border-bottom: 3px solid black;
 }
 
+.hint-wrapper {
+    width: 90%;
+    aspect-ratio: 1/1;
+
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+}
+
+.hint-row {
+    flex: 1 0;
+    display: flex;
+    align-items: stretch;
+    flex-direction: row;
+}
+
+.hint {
+    font-size: 0.33em;
+    flex: 1 0;
+}
+
 .flex-center {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
+}
+
+.digit-btns {
+    flex: 1 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .digit-btn-row {
@@ -78,10 +106,11 @@
 
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: flex-start;
+    gap: 10px;
 }
 
-.digit-btn {
+.control-btn {
     background-color: #DDDDDD;
 
     border: 1px solid black;
@@ -94,7 +123,11 @@
     font-size: 2.8em;
 }
 
-.digit-btn:hover {
+.control-btn:hover {
     background-color: #ADD8E6;
     cursor: pointer;
+}
+
+.digit-btn-hints-toggle {
+    font-size: 1.3em;
 }
