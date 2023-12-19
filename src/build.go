@@ -56,7 +56,8 @@ func generateTemplateInput(n int) TemplateInput {
 		}
 		row.Cells = make([]SudokuCell, n*n)
 		for colIdx := 0; colIdx < n*n; colIdx++ {
-			row.Cells[colIdx].Id = "sudoku-cell-" + strconv.Itoa((rowIdx*n*n)+colIdx)
+            posStr := strconv.Itoa(rowIdx) + "-" + strconv.Itoa(colIdx)
+			row.Cells[colIdx].Id = "sudoku-cell-" + posStr
 			if (colIdx+1)%n == 0 && colIdx+1 < n*n {
 				row.Cells[colIdx].VertBorder = true
 			}
