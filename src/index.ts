@@ -1,3 +1,5 @@
+import { randomSudokuVariation } from "./sudoku.js"
+
 class CursorMoveEvent {
     from_pos: number
     to_pos: number
@@ -531,7 +533,7 @@ function getInputMode(): InputMode {
 }
 
 function onLoad(): void {
-    const board = [
+    const board = randomSudokuVariation([
         0, 0, 0, 0, 8, 4, 0, 0, 6,
         0, 0, 0, 0, 0, 0, 0, 0, 4,
         4, 8, 6, 0, 0, 0, 9, 7, 5,
@@ -541,7 +543,7 @@ function onLoad(): void {
         0, 4, 1, 8, 0, 0, 5, 0, 3,
         5, 7, 0, 0, 0, 6, 0, 4, 0,
         2, 0, 0, 4, 0, 0, 0, 0, 0
-    ]
+    ])
     for (let pos = 0; pos < richSudoku.sudoku.sizeSq ** 2; ++pos) {
         if (board[pos] != 0) {
             richSudoku.sudoku.setCell(pos, board[pos])
