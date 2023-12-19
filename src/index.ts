@@ -599,3 +599,32 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 // must be initialized after event handlers so that they get triggered
 // on any events emitted in the constructor
 const richSudoku = new RichSudoku(new Sudoku(3), 30)
+
+onLoad()
+
+function getDiv(id: string): HTMLDivElement {
+    let button = document.getElementById(id)
+    if (button == null) {
+        throw new Error(`div with id ${id} not found`)
+    }
+    if (!(button instanceof HTMLDivElement)) {
+        throw new Error(`DOM element with id ${id} expected to be a div`)
+    }
+    return button
+}
+
+for (let i = 1; i < 11; i++) {
+    const suffix = i <= 9 ? i.toString() : "x"
+    const id = "digit-btn-" + suffix
+    let button = getDiv(id)
+    button.onclick = () => onDigitButtonClick(button)
+}
+
+let button = getDiv("input-mode-button")
+button.onclick = toggleInputMode
+
+for (let i = 0; i < 81; i++) {
+    const id = "sudoku-cell-" + i.toString()
+    let cell = getDiv(id)
+    cell.onclick = () => highlightSudokuCell(cell)
+}
