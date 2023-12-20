@@ -111,6 +111,7 @@ document.onkeydown = (e: KeyboardEvent) => {
             break
         case "m":
             toggleInputMode()
+            break
     }
 };
 
@@ -194,23 +195,30 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 })
 
 // INITIALIZATION
+const richSudoku = new RichSudoku(3)
 
-let sudoku = new Sudoku(
-    3,
-    [
-        [0, 0, 0, 0, 8, 4, 0, 0, 6],
-        [0, 0, 0, 0, 0, 0, 0, 0, 4],
-        [4, 8, 6, 0, 0, 0, 9, 7, 5],
-        [9, 0, 5, 3, 0, 7, 0, 0, 0],
-        [3, 2, 0, 0, 0, 0, 0, 5, 9],
-        [0, 0, 0, 5, 0, 0, 3, 6, 0],
-        [0, 4, 1, 8, 0, 0, 5, 0, 3],
-        [5, 7, 0, 0, 0, 6, 0, 4, 0],
-        [2, 0, 0, 4, 0, 0, 0, 0, 0],
-    ]
-)
-shuffleSudoku(sudoku)
-const richSudoku = new RichSudoku(sudoku)
+function newGame(): void {
+    let sudoku = new Sudoku(
+        3,
+        [
+            [0, 0, 0, 0, 8, 4, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [4, 8, 6, 0, 0, 0, 9, 7, 5],
+            [9, 0, 5, 3, 0, 7, 0, 0, 0],
+            [3, 2, 0, 0, 0, 0, 0, 5, 9],
+            [0, 0, 0, 5, 0, 0, 3, 6, 0],
+            [0, 4, 1, 8, 0, 0, 5, 0, 3],
+            [5, 7, 0, 0, 0, 6, 0, 4, 0],
+            [2, 0, 0, 4, 0, 0, 0, 0, 0],
+        ]
+    )
+    shuffleSudoku(sudoku)
+    richSudoku.newGame(sudoku, true)
+}
+
+if (!richSudoku.load()) {
+    newGame()
+}
 
 for (let i = 1; i < 11; i++) {
     const suffix = i <= 9 ? i.toString() : "x"
@@ -221,6 +229,14 @@ for (let i = 1; i < 11; i++) {
 
 let button = getDiv("input-mode-button")
 button.onclick = toggleInputMode
+
+let newGameButton = getDiv("new-game-button")
+newGameButton.onclick = () => {
+    const msg = "Do you want to start a new game?\nCurrent progress will be lost."
+    if (window.confirm(msg)) {
+        newGame()
+    }
+}
 
 for (let row = 0; row < richSudoku.sudoku.rows; row++) {
     for (let col = 0; col < richSudoku.sudoku.cols; col++) {

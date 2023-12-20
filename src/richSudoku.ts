@@ -136,6 +136,7 @@ class Hints {
         }
     }
 
+
     private posToIdx(pos: Pos): number {
         const [row, col] = pos
         return ((row * this.sudoku.cols) + col) * this.sudoku.values
@@ -155,6 +156,24 @@ class Hints {
         new HintUpdateEvent(pos, this.get(pos)).emit()
     }
 
+    clearAll(): void {
+        const hintsCount = this.sudoku.rows * this.sudoku.cols * this.sudoku.values
+        for (let row = 0; row < this.sudoku.rows; row++) {
+            for (let col = 0; col < this.sudoku.cols; col++) {
+                let update = false
+                for (let value = 0; value < this.sudoku.values; value++) {
+                    const idx = (row * this.sudoku.cols * this.sudoku.values)
+                        + (col * this.sudoku.values) + value
+                    if (this.hints[idx]) {
+                        update = true
+                        this.hints[idx] = false
+                    }
+                }
+                new HintUpdateEvent([row, col], this.get([row, col])).emit()
+            }
+        }
+    }
+
     get(pos: Pos): boolean[] {
         const start = this.posToIdx(pos)
         return this.hints.slice(start, start + this.sudoku.values)
@@ -162,16 +181,18 @@ class Hints {
 }
 
 class Cursor {
+    richSudoku: RichSudoku
     sudoku: Sudoku
     active: boolean
     pos: Pos
 
-    constructor(sudoku: Sudoku) {
-        this.sudoku = sudoku
+    constructor(richSudoku: RichSudoku) {
+        this.richSudoku = richSudoku
+        this.sudoku = richSudoku.sudoku
         this.active = false
         this.pos = [
-            Math.floor(sudoku.rows/2),
-            Math.floor(sudoku.cols/2),
+            Math.floor(this.sudoku.rows/2),
+            Math.floor(this.sudoku.cols/2),
         ]
     }
 
@@ -180,6 +201,7 @@ class Cursor {
             new CursorMoveEvent(null, this.pos)
             this.active = true
         }
+        this.richSudoku.save()
     }
 
     deactivate(): void {
@@ -187,6 +209,7 @@ class Cursor {
             new CursorMoveEvent(this.pos, null)
             this.active = false
         }
+        this.richSudoku.save()
     }
 
     set(pos: Pos): void {
@@ -194,6 +217,7 @@ class Cursor {
         this.pos = pos
         new CursorMoveEvent(oldPos, this.pos).emit()
         this.active = true
+        this.richSudoku.save()
     }
 
     moveRight(): void {
@@ -204,6 +228,7 @@ class Cursor {
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
+        this.richSudoku.save()
     }
 
     moveLeft(): void {
@@ -214,6 +239,7 @@ class Cursor {
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
+        this.richSudoku.save()
     }
 
     moveUp() {
@@ -224,6 +250,7 @@ class Cursor {
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
+        this.richSudoku.save()
     }
 
     moveDown(): void {
@@ -234,6 +261,7 @@ class Cursor {
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
+        this.richSudoku.save()
     }
 }
 
@@ -289,29 +317,41 @@ class RichSudoku {
     cursor: Cursor
     hints: Hints
 
-    constructor(sudoku: Sudoku) {
-        this.sudoku = sudoku
+    reloading: number
+
+    constructor(n: number) {
+        this.sudoku = new Sudoku(n)
+        this.freezer = new Freezer(this.sudoku)
+        this.cursor = new Cursor(this)
+        this.hints = new Hints(this.sudoku)
+        this.reloading = 0
+    }
+
+    newGame(sudoku: Sudoku, freeze: boolean) {
+        if (sudoku.n != this.sudoku.n) {
+            throw new Error("inavlid sudoku size")
+        }
+        this.reloading++
+        this.hints.clearAll()
         for (let row = 0; row < sudoku.rows; row++) {
             for (let col = 0; col < sudoku.cols; col++) {
-                const curr = sudoku.board[row][col]
-                if (curr != 0) {
-                    new ValueSetEvent([row, col], curr).emit()
-                    new FreezeEvent([row, col], true).emit()
+                this.freezer.thaw(row, col)
+                const newValue = sudoku.board[row][col]
+                this.setAt([row, col], newValue)
+                if (freeze && newValue != 0) {
+                    this.freezer.freeze(row, col)
                 }
             }
         }
-
-        this.freezer = new Freezer(sudoku)
-        this.cursor = new Cursor(sudoku)
-        this.hints = new Hints(sudoku)
+        this.reloading--
+        this.save()
     }
 
-    set(value: number): void {
+    setAt(pos: [number, number], value: number): void {
         if (!(this.sudoku.isValidValue(value) || value == 0)) {
             return
         }
-        const pos = this.cursor.pos
-        if (!this.cursor.active || this.freezer.at(pos)) {
+        if (this.freezer.at(pos)) {
             return
         }
         this.sudoku.setAt(pos, value)
@@ -319,6 +359,14 @@ class RichSudoku {
         if (value > 0 && this.sudoku.isDone()) {
             new SudokuSolvedEvent().emit()
         }
+        this.save()
+    }
+
+    set(value: number): void {
+        if (!this.cursor.active) {
+            return
+        }
+        this.setAt(this.cursor.pos, value)
     }
 
     clear(): void {
@@ -332,6 +380,7 @@ class RichSudoku {
         } else {
             this.hints.clear(pos)
         }
+        this.save()
     }
 
     toggleHint(value: number) {
@@ -346,6 +395,79 @@ class RichSudoku {
             this.set(0)
         }
         this.hints.toggle(pos, value)
+        this.save()
+    }
+
+    serialize(): string {
+        return JSON.stringify({
+            "sudoku": {
+                "size": this.sudoku.n,
+                "values": this.sudoku.board,
+            },
+            "hints": this.hints.hints,
+            "cursor": {
+                "active": this.cursor.active,
+                "pos": this.cursor.pos,
+            },
+            "frozen": this.freezer.frozen,
+        })
+    }
+
+    save(): void {
+        if (this.reloading == 0) {
+            sessionStorage.setItem("sudoku", this.serialize())
+        }
+    }
+
+    load(): boolean {
+        const cachedSudoku = sessionStorage.getItem("sudoku")
+        if (cachedSudoku == null) {
+            return false
+        }
+
+        this.reloading++
+
+        const obj = JSON.parse(cachedSudoku)
+        const size = obj["sudoku"]["size"]
+        const board = obj["sudoku"]["values"]
+        const sudoku = new Sudoku(size, board)
+        this.newGame(sudoku, false)
+
+        // freezer
+        const frozen = obj["frozen"]
+        for (let row = 0; row < sudoku.rows; row++) {
+            for (let col = 0; col < sudoku.cols; col++) {
+                if (frozen[row][col]) {
+                    this.freezer.freeze(row, col)
+                }
+            }
+        }
+
+        // cursor
+        const pos = obj["cursor"]["pos"]
+        this.cursor.set(pos)
+        const cursorActive = obj["cursor"]["active"]
+        if (!cursorActive) {
+            this.cursor.deactivate()
+        }
+
+        // hints
+        const hints = obj["hints"]
+        for (let row = 0; row < sudoku.rows; row++) {
+            for (let col = 0; col < sudoku.cols; col++) {
+                for (let value = 0; value < sudoku.values; value++) {
+                    const idx = (row*sudoku.cols*sudoku.values)
+                        + (col*sudoku.values) + value
+                    if (hints[idx]) {
+                        this.hints.toggle([row, col], value+1)
+                    }
+                }
+            }
+        }
+
+        this.reloading--
+        this.save()
+        return true
     }
 }
 

@@ -64,7 +64,7 @@
 }
 
 .sudoku-cell-cursor.sudoku-cell-frozen {
-    background: #4D759A;
+    background: #7DB5C8;
 }
 
 .sudoku-vert-border {
@@ -181,7 +181,7 @@
     cursor: pointer;
 }
 
-.digit-btn-hints-toggle {
+.digit-btn-text {
     font-size: 1.3em;
 
     @media screen and (max-width: 600px) {
