@@ -142,10 +142,12 @@ class Hints {
         return ((row * this.sudoku.cols) + col) * this.sudoku.values
     }
 
-    toggle(pos: Pos, value: number): void {
+    toggle(pos: Pos, value: number, quiet: boolean = false): void {
         const idx = this.posToIdx(pos) + value - 1
         this.hints[idx] = !this.hints[idx]
-        new HintUpdateEvent(pos, this.get(pos)).emit()
+        if (!quiet || this.sudoku.at(pos) == 0) {
+            new HintUpdateEvent(pos, this.get(pos)).emit()
+        }
     }
 
     clear(pos: Pos): void {
@@ -333,9 +335,9 @@ class RichSudoku {
         }
         this.reloading++
         this.hints.clearAll()
+        this.freezer.thawAll()
         for (let row = 0; row < sudoku.rows; row++) {
             for (let col = 0; col < sudoku.cols; col++) {
-                this.freezer.thaw(row, col)
                 const newValue = sudoku.board[row][col]
                 this.setAt([row, col], newValue)
                 if (freeze && newValue != 0) {
@@ -459,7 +461,7 @@ class RichSudoku {
                     const idx = (row*sudoku.cols*sudoku.values)
                         + (col*sudoku.values) + value
                     if (hints[idx]) {
-                        this.hints.toggle([row, col], value+1)
+                        this.hints.toggle([row, col], value+1, true)
                     }
                 }
             }
