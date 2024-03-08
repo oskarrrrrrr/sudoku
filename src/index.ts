@@ -197,27 +197,30 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 // INITIALIZATION
 const richSudoku = new RichSudoku(3)
 
-function newGame(): void {
-    let sudoku = new Sudoku(
-        3,
-        [
-            [0, 0, 0, 0, 8, 4, 0, 0, 6],
-            [0, 0, 0, 0, 0, 0, 0, 0, 4],
-            [4, 8, 6, 0, 0, 0, 9, 7, 5],
-            [9, 0, 5, 3, 0, 7, 0, 0, 0],
-            [3, 2, 0, 0, 0, 0, 0, 5, 9],
-            [0, 0, 0, 5, 0, 0, 3, 6, 0],
-            [0, 4, 1, 8, 0, 0, 5, 0, 3],
-            [5, 7, 0, 0, 0, 6, 0, 4, 0],
-            [2, 0, 0, 4, 0, 0, 0, 0, 0],
-        ]
-    )
+function sudokuFromStrList(s: string): number[][] {
+    const nums = s.split(",").map(Number)
+    const result: number[][] = []
+    let i = 0
+    for (let row = 0; row < 9; row++) {
+        result.push([])
+        for (let col = 0; col < 9; col++) {
+            result[row][col] = nums[i]
+            i++
+        }
+    }
+    return result
+}
+
+async function newGame(): Promise<void> {
+    const response = await fetch("/api/random-sudoku")
+    const text = await response.text()
+    let sudoku = new Sudoku(3, sudokuFromStrList(text))
     shuffleSudoku(sudoku)
     richSudoku.newGame(sudoku, true)
 }
 
 if (!richSudoku.load()) {
-    newGame()
+    await newGame()
 }
 
 for (let i = 1; i < 11; i++) {
@@ -231,10 +234,10 @@ let button = getDiv("input-mode-button")
 button.onclick = toggleInputMode
 
 let newGameButton = getDiv("new-game-button")
-newGameButton.onclick = () => {
+newGameButton.onclick = async() => {
     const msg = "Do you want to start a new game?\nCurrent progress will be lost."
     if (window.confirm(msg)) {
-        newGame()
+        await newGame()
     }
 }
 

@@ -23,11 +23,16 @@ function tsc(cb) {
         .js.pipe(dest("site"));
 }
 
+function build_api(cb) {
+    return cp.exec("go build -C ./src/api -o ../../site/api")
+}
+
 exports.watch = function() {
     watch("src/build.go", series(build, html))
     watch("src/*.html", html)
     watch("src/*.css", css)
     watch("src/*.ts", tsc)
+    watch("src/api/**/*.go", build_api)
 }
 
 exports.clean = function(cb) {
