@@ -188,8 +188,10 @@ FreezeEvent.listen((event: FreezeEvent) => {
 })
 
 SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
+    richSudoku.timer.pause()
+    const time = richSudoku.timer.toString()
     setTimeout(
-        function() { alert("you win!") },
+        function() { alert("Sudoku solved in " + time + "!") },
         50
     )
 })
@@ -247,3 +249,13 @@ for (let row = 0; row < richSudoku.sudoku.rows; row++) {
         cell.onclick = () => highlightSudokuCell(cell)
     }
 }
+
+
+// TIMER
+
+function getTimerDiv(): HTMLDivElement {
+    return getDiv("game-timer")
+}
+
+setInterval(function () { getTimerDiv().innerText = richSudoku.timer.toString() }, 50)
+setInterval(function () { richSudoku.save() }, 500)

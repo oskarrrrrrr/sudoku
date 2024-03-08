@@ -1,10 +1,32 @@
+.prevent-select {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
 .sudoku-header {
-    font-size: 4em;
-    margin: 15px;
+    height: 100px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
 
     @media screen and (max-width: 600px) {
         display: none;
     }
+}
+
+.sudoku-title {
+    font-size: 4em;
+    margin: 15px;
+    cursor: default;
+}
+
+.sudoku-status {
+    display: flex;
+    align-items: center;
+    font-size: 1.5em;
+    margin: 15px;
 }
 
 .main {
@@ -24,6 +46,8 @@
 
     border: 5px solid black;
     border-collapse: collapse;
+
+    cursor: pointer;
 
     @media screen and (max-width: 600px) {
         border: 3px solid black;

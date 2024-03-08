@@ -313,11 +313,64 @@ class Freezer {
     }
 }
 
+class Timer {
+    accumulator: number
+    start: Date | null
+
+    constructor() {
+        this.accumulator = 0
+        this.start = null
+    }
+
+    getDiff(): number {
+        if (this.start == null) {
+            return 0
+        }
+        return Date.now() - this.start.getTime()
+    }
+
+    pause(): void {
+        this.accumulator += this.getDiff()
+        this.start = null
+    }
+
+    value(): number {
+        return this.accumulator + this.getDiff()
+    }
+
+    resume(): void {
+        if (this.start != null) {
+            return
+        }
+        this.start = new Date()
+    }
+
+    toString(): string {
+        let diff = this.value()
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+        diff -= hours * 1000 * 60  * 60
+        const minutes = Math.floor(diff / (1000 * 60))
+        diff -= minutes * 1000 * 60
+        const seconds = Math.floor(diff / 1000)
+        let result = ""
+        if (hours > 0) {
+            result = result + hours.toString() + "hrs "
+        }
+        if (hours > 0 || minutes > 0) {
+            result = result + minutes.toString() + "m "
+        }
+        result = result + seconds.toString() + "s"
+        return result
+    }
+}
+
+
 class RichSudoku {
     sudoku: Sudoku
     freezer: Freezer
     cursor: Cursor
     hints: Hints
+    timer: Timer
 
     reloading: number
 
@@ -326,6 +379,7 @@ class RichSudoku {
         this.freezer = new Freezer(this.sudoku)
         this.cursor = new Cursor(this)
         this.hints = new Hints(this.sudoku)
+        this.timer = new Timer()
         this.reloading = 0
     }
 
@@ -346,6 +400,8 @@ class RichSudoku {
             }
         }
         this.reloading--
+        this.timer = new Timer()
+        this.timer.resume()
         this.save()
     }
 
@@ -412,6 +468,9 @@ class RichSudoku {
                 "pos": this.cursor.pos,
             },
             "frozen": this.freezer.frozen,
+            "timer": {
+                "value": this.timer.value(),
+            }
         })
     }
 
@@ -466,6 +525,14 @@ class RichSudoku {
                 }
             }
         }
+
+        // timer
+        const timerObj = obj["timer"]
+        if (timerObj["value"] !== undefined) {
+            this.timer.accumulator = timerObj["value"]
+        }
+        this.timer.start = null
+        this.timer.resume()
 
         this.reloading--
         this.save()

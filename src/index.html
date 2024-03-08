@@ -9,8 +9,11 @@
   </head>
   <body class="flex-center">
     <div class="main">
-        <h1 class="sudoku-header">Sudoku</h1>
-        <div class="sudoku-table">
+        <div class="sudoku-header">
+            <h1 class="sudoku-title prevent-select">sudoku</h1>
+            <div id="game-timer" class="sudoku-status"></div>
+        </div>
+        <div class="sudoku-table prevent-select blur">
             {{- range $row := .Sudoku.Rows}}
                 <div class="sudoku-row {{if $row.HorizBorder}}sudoku-horiz-border{{end}}">
                     {{- range $cell := $row.Cells}}
@@ -22,7 +25,7 @@
                 </div>
             {{- end}}
         </div>
-        <div class="digit-btns">
+        <div class="digit-btns prevent-select">
             <div class="digit-btn-row">
                 <div id="digit-btn-1" class="control-btn flex-center">1</div>
                 <div id="digit-btn-2" class="control-btn flex-center">2</div>
