@@ -14,17 +14,25 @@ function html(cb) {
 
 function css(cb) {
     return src("src/*.css")
-        .pipe(dest("site"))
+        .pipe(dest("site/static"))
 }
 
 function tsc(cb) {
     return tsProject.src()
         .pipe(tsProject())
-        .js.pipe(dest("site"));
+        .js.pipe(dest("site/static"));
 }
 
 function build_api(cb) {
     return cp.exec("go build -C ./src/api -o ../../site/api")
+}
+
+function sudokus(cb) {
+    return src("./src/api/sudokus.txt").pipe(dest("site"))
+}
+
+function clean(cb) {
+    return cp.exec("rm -rf site/* scripts/*", cb)
 }
 
 exports.watch = function() {
@@ -33,14 +41,18 @@ exports.watch = function() {
     watch("src/*.css", css)
     watch("src/*.ts", tsc)
     watch("src/api/**/*.go", build_api)
+    watch("src/api/sudokus.txt", sudokus)
 }
 
-exports.clean = function(cb) {
-    return cp.exec("rm -rf site/* scripts/*", cb)
-}
+exports.clean = clean
 
-exports.build = parallel(
-    series(build, html),
-    css,
-    tsc
+exports.build = series(
+    clean,
+    parallel(
+        series(build, html),
+        css,
+        tsc,
+        build_api,
+        sudokus,
+    )
 )

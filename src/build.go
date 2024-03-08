@@ -75,7 +75,7 @@ func main() {
 	err = os.MkdirAll("site", os.FileMode(0777))
 	check(err)
 
-	of, err := os.Create("site/index.html")
+	of, err := os.Create("site/static/index.html")
 	check(err)
 	defer of.Close()
 
