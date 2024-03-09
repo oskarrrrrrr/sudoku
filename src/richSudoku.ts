@@ -84,12 +84,23 @@ class SudokuSolvedEvent {
     }
 }
 
+class SudokuGameLoadEvent {
+    emit(): void {
+        emitSudokuEvent("SudokuGameLoadEvent", this)
+    }
+
+    static listen(cb: (event: SudokuGameLoadEvent) => void): void {
+        listenToSudokuEvent("SudokuGameLoadEvent", cb)
+    }
+}
+
 type SudokuEventName =
     "CursorMoveEvent"
     | "ValueSetEvent"
     | "HintUpdateEvent"
     | "FreezeEvent"
     | "SudokuSolvedEvent"
+    | "SudokuGameLoadEvent"
 
 
 type SudokuEvent =
@@ -98,6 +109,7 @@ type SudokuEvent =
     | HintUpdateEvent
     | FreezeEvent
     | SudokuSolvedEvent
+    | SudokuGameLoadEvent
 
 
 function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
@@ -270,6 +282,7 @@ class Cursor {
 class Freezer {
     sudoku: Sudoku
     frozen: boolean[][]
+    frozenCount: number
 
     constructor(sudoku: Sudoku) {
         this.sudoku = sudoku
@@ -280,6 +293,7 @@ class Freezer {
                 this.frozen[row].push(false)
             }
         }
+        this.frozenCount = 0
     }
 
     at(pos: Pos): boolean {
@@ -293,6 +307,7 @@ class Freezer {
         }
         if (!this.frozen[row][col]) {
             this.frozen[row][col] = true
+            this.frozenCount++
             new FreezeEvent([row, col], true).emit()
         }
     }
@@ -300,6 +315,7 @@ class Freezer {
     thaw(row: number, col: number): void {
         if (this.frozen[row][col]) {
             this.frozen[row][col] = false
+            this.frozenCount--
             new FreezeEvent([row, col], false).emit()
         }
     }
@@ -371,6 +387,7 @@ class RichSudoku {
     cursor: Cursor
     hints: Hints
     timer: Timer
+    difficulty: string
 
     reloading: number
 
@@ -380,10 +397,11 @@ class RichSudoku {
         this.cursor = new Cursor(this)
         this.hints = new Hints(this.sudoku)
         this.timer = new Timer()
+        this.difficulty = ""
         this.reloading = 0
     }
 
-    newGame(sudoku: Sudoku, freeze: boolean) {
+    newGame(sudoku: Sudoku, freeze: boolean, difficulty: string) {
         if (sudoku.n != this.sudoku.n) {
             throw new Error("inavlid sudoku size")
         }
@@ -399,9 +417,11 @@ class RichSudoku {
                 }
             }
         }
-        this.reloading--
         this.timer = new Timer()
         this.timer.resume()
+        this.difficulty = difficulty
+        new SudokuGameLoadEvent().emit()
+        this.reloading--
         this.save()
     }
 
@@ -461,6 +481,7 @@ class RichSudoku {
             "sudoku": {
                 "size": this.sudoku.n,
                 "values": this.sudoku.board,
+                "difficulty": this.difficulty,
             },
             "hints": this.hints.hints,
             "cursor": {
@@ -491,8 +512,9 @@ class RichSudoku {
         const obj = JSON.parse(cachedSudoku)
         const size = obj["sudoku"]["size"]
         const board = obj["sudoku"]["values"]
+        const difficulty = obj["sudoku"]["difficulty"]
         const sudoku = new Sudoku(size, board)
-        this.newGame(sudoku, false)
+        this.newGame(sudoku, false, difficulty)
 
         // freezer
         const frozen = obj["frozen"]
@@ -534,6 +556,8 @@ class RichSudoku {
         this.timer.start = null
         this.timer.resume()
 
+        new SudokuGameLoadEvent().emit()
+
         this.reloading--
         this.save()
         return true
@@ -550,4 +574,5 @@ export {
     HintUpdateEvent,
     FreezeEvent,
     SudokuSolvedEvent,
+    SudokuGameLoadEvent,
 }

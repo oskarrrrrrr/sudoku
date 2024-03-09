@@ -6,6 +6,7 @@ import {
     HintUpdateEvent,
     FreezeEvent,
     SudokuSolvedEvent,
+    SudokuGameLoadEvent,
 } from "./richSudoku.js"
 
 
@@ -196,6 +197,13 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
     )
 })
 
+SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
+    getDifficultyDiv().innerText = (
+        richSudoku.difficulty + " | " +
+        richSudoku.freezer.frozenCount.toString() + " hints"
+    )
+})
+
 // INITIALIZATION
 const richSudoku = new RichSudoku(3)
 
@@ -216,9 +224,11 @@ function sudokuFromStrList(s: string): number[][] {
 async function newGame(): Promise<void> {
     const response = await fetch("/api/random-sudoku")
     const text = await response.text()
-    let sudoku = new Sudoku(3, sudokuFromStrList(text))
+    const lines = text.split("\n")
+    let difficulty = lines[0]
+    let sudoku = new Sudoku(3, sudokuFromStrList(lines[1]))
     shuffleSudoku(sudoku)
-    richSudoku.newGame(sudoku, true)
+    richSudoku.newGame(sudoku, true, difficulty)
 }
 
 if (!richSudoku.load()) {
@@ -259,3 +269,9 @@ function getTimerDiv(): HTMLDivElement {
 
 setInterval(function () { getTimerDiv().innerText = richSudoku.timer.toString() }, 50)
 setInterval(function () { richSudoku.save() }, 500)
+
+// DIFFICULTY
+
+function getDifficultyDiv(): HTMLDivElement {
+    return getDiv("game-difficulty")
+}

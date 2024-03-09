@@ -11,7 +11,10 @@
     <div class="main">
         <div class="sudoku-header">
             <h1 class="sudoku-title prevent-select">sudoku</h1>
-            <div id="game-timer" class="sudoku-status"></div>
+            <div class="sudoku-status">
+                <div id="game-timer"></div>
+                <div id="game-difficulty"></div>
+            </div>
         </div>
         <div class="sudoku-table prevent-select blur">
             {{- range $row := .Sudoku.Rows}}
