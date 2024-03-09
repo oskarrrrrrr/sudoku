@@ -7,6 +7,7 @@ import {
     FreezeEvent,
     SudokuSolvedEvent,
     SudokuGameLoadEvent,
+    ConflictMarkEvent,
 } from "./richSudoku.js"
 
 
@@ -141,13 +142,23 @@ CursorMoveEvent.listen((event: CursorMoveEvent) => {
     }
 })
 
-ValueSetEvent.listen((event: ValueSetEvent) => {
-    const cell = getSudokuCell(event.pos)
-    if (event.value == 0) {
+function setCellValue(pos: [number, number], value: number): void {
+    const cell = getSudokuCell(pos)
+    if (value == 0) {
         cell.innerText = ""
     } else {
-        cell.innerText = event.value.toString()
+        if (richSudoku.conflicts.at(pos)) {
+            cell.innerHTML = (
+                `${value.toString()}<div class="circle"></div>`
+            )
+        } else {
+            cell.innerText = value.toString()
+        }
     }
+}
+
+ValueSetEvent.listen((event: ValueSetEvent) => {
+    setCellValue(event.pos, event.value)
 })
 
 function getHintsHtml(hints: boolean[]): string {
@@ -202,6 +213,13 @@ SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
         richSudoku.difficulty + " | " +
         richSudoku.freezer.frozenCount.toString() + " hints"
     )
+})
+
+ConflictMarkEvent.listen((e: ConflictMarkEvent) => {
+    for (let i = 0; i < e.changes.length; i++) {
+        const [pos, _] = e.changes[i]
+        setConflict(pos)
+    }
 })
 
 // INITIALIZATION
@@ -267,11 +285,23 @@ function getTimerDiv(): HTMLDivElement {
     return getDiv("game-timer")
 }
 
-setInterval(function () { getTimerDiv().innerText = richSudoku.timer.toString() }, 50)
+setInterval(function () {
+    const timerDiv = getTimerDiv()
+    const newTimerStr = richSudoku.timer.toString()
+    if (timerDiv.innerText != newTimerStr) {
+        timerDiv.innerText = newTimerStr
+    }
+}, 50)
 setInterval(function () { richSudoku.save() }, 500)
 
 // DIFFICULTY
 
 function getDifficultyDiv(): HTMLDivElement {
     return getDiv("game-difficulty")
+}
+
+// CONFLICT
+
+function setConflict(pos: [number, number]): void {
+    setCellValue(pos, richSudoku.sudoku.at(pos))
 }

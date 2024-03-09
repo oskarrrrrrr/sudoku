@@ -1,3 +1,13 @@
+.circle {
+    position: absolute;
+    top: 75%;
+    left: 45%;
+    width: 10%;
+    height: 10%;
+    background-color: #d22020;
+    border-radius: 50%;
+}
+
 .prevent-select {
     -webkit-user-select: none; /* Safari */
     -ms-user-select: none; /* IE 10 and IE 11 */
@@ -70,6 +80,8 @@
 .sudoku-cell {
     border: 1px solid black;
     border-collapse: collapse;
+
+    position: relative;
 
     width: 75px;
     aspect-ratio: 1/1;

@@ -94,6 +94,24 @@ class SudokuGameLoadEvent {
     }
 }
 
+class ConflictMarkEvent {
+    // list of positions and conflict indicators;
+    // true - conflict, false - no conflict
+    changes: [Pos, boolean][]
+
+    constructor(changes: [Pos, boolean][]) {
+        this.changes = changes
+    }
+
+    emit(): void {
+        emitSudokuEvent("ConflictMarkEvent", this)
+    }
+
+    static listen(cb: (event: ConflictMarkEvent) => void): void {
+        listenToSudokuEvent("ConflictMarkEvent", cb)
+    }
+}
+
 type SudokuEventName =
     "CursorMoveEvent"
     | "ValueSetEvent"
@@ -101,6 +119,7 @@ type SudokuEventName =
     | "FreezeEvent"
     | "SudokuSolvedEvent"
     | "SudokuGameLoadEvent"
+    | "ConflictMarkEvent"
 
 
 type SudokuEvent =
@@ -110,6 +129,7 @@ type SudokuEvent =
     | FreezeEvent
     | SudokuSolvedEvent
     | SudokuGameLoadEvent
+    | ConflictMarkEvent
 
 
 function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
@@ -148,7 +168,6 @@ class Hints {
         }
     }
 
-
     private posToIdx(pos: Pos): number {
         const [row, col] = pos
         return ((row * this.sudoku.cols) + col) * this.sudoku.values
@@ -171,7 +190,6 @@ class Hints {
     }
 
     clearAll(): void {
-        const hintsCount = this.sudoku.rows * this.sudoku.cols * this.sudoku.values
         for (let row = 0; row < this.sudoku.rows; row++) {
             for (let col = 0; col < this.sudoku.cols; col++) {
                 let update = false
@@ -380,6 +398,135 @@ class Timer {
     }
 }
 
+class ConflictsTracker {
+    sudoku: Sudoku
+    rowCounters: number[][]
+    colCounters: number[][]
+    boxCounters: number[][]
+
+    constructor(sudoku: Sudoku) {
+        this.sudoku = sudoku
+        this.rowCounters = this.newCountersArr()
+        this.colCounters = this.newCountersArr()
+        this.boxCounters = this.newCountersArr()
+    }
+
+    at(pos: Pos): boolean {
+        const [row, col] = pos
+        const boxNum = this.posToBoxNum(pos)
+        const val = this.sudoku.at(pos)
+        return (
+            this.rowCounters[row][val] > 1
+            || this.colCounters[col][val] > 1
+            || this.boxCounters[boxNum][val] > 1
+        )
+    }
+
+    newCountersArr(): number[][] {
+        let arr = []
+        for (let i = 0; i < this.sudoku.rows; i++) {
+            let subArr = Array(this.sudoku.values+1).fill(0)
+            arr.push(subArr)
+        }
+        return arr
+    }
+
+    posToBoxNum(pos: Pos): number {
+        const [row, col] = pos;
+        const n = this.sudoku.n
+        return n * Math.floor(row / n) + Math.floor(col / n)
+    }
+
+    findValuesInRow(row: number, value: number): Pos[] {
+        const result = []
+        for (let col = 0; col < this.sudoku.cols; col++) {
+            const pos: Pos = [row, col]
+            if (this.sudoku.at(pos) == value) {
+                result.push(pos)
+            }
+        }
+        return result
+    }
+
+    findValuesInCol(col: number, value: number): Pos[] {
+        const result = []
+        for (let row = 0; row < this.sudoku.rows; row++) {
+            const pos: Pos = [row, col]
+            if (this.sudoku.at(pos) == value) {
+                result.push(pos)
+            }
+        }
+        return result
+    }
+
+    findValuesInBox(box: number, value: number): Pos[] {
+        let result = []
+        const startRow = Math.floor(box / 3) * 3
+        const startCol = (box % 3) * 3
+        for (let row = startRow; row < startRow + this.sudoku.n; row++) {
+            for (let col = startCol; col < startCol + this.sudoku.n; col++) {
+                const pos: Pos = [row, col]
+                if (this.sudoku.at(pos) == value) {
+                    result.push(pos)
+                }
+            }
+        }
+        return result;
+    }
+
+    recordChange(pos: Pos, prevValue: number): void {
+        const curr = this.sudoku.at(pos)
+        if (curr == prevValue) {
+            return
+        }
+
+        const [row, col] = pos
+        const boxNum = this.posToBoxNum(pos)
+
+        let changes: [Pos, boolean][] = []
+        function addChanges(positions: Pos[], conflict: boolean): void {
+            for (let i = 0; i < positions.length; i++) {
+                changes.push([positions[i], conflict])
+            }
+        }
+
+        if (prevValue != 0) {
+            if (this.rowCounters[row][prevValue] == 2) {
+                addChanges(this.findValuesInRow(row, prevValue), false)
+            }
+            this.rowCounters[row][prevValue]--
+
+            if (this.colCounters[col][prevValue] == 2) {
+                addChanges(this.findValuesInCol(col, prevValue), false)
+            }
+            this.colCounters[col][prevValue]--
+
+            if (this.boxCounters[boxNum][prevValue] == 2) {
+                addChanges(this.findValuesInBox(boxNum, prevValue), false)
+            }
+            this.boxCounters[boxNum][prevValue]--
+        }
+
+        if (curr != 0) {
+            if (this.rowCounters[row][curr] == 1) {
+                addChanges(this.findValuesInRow(row, curr), true)
+            }
+            this.rowCounters[row][curr]++
+
+            if (this.colCounters[col][curr] == 1) {
+                addChanges(this.findValuesInCol(col, curr), true)
+            }
+            this.colCounters[col][curr]++
+
+            if (this.boxCounters[boxNum][curr] == 1) {
+                addChanges(this.findValuesInBox(boxNum, curr), true)
+            }
+            this.boxCounters[boxNum][curr]++
+        }
+
+        new ConflictMarkEvent(changes).emit()
+    }
+}
 
 class RichSudoku {
     sudoku: Sudoku
@@ -388,6 +535,7 @@ class RichSudoku {
     hints: Hints
     timer: Timer
     difficulty: string
+    conflicts: ConflictsTracker
 
     reloading: number
 
@@ -398,6 +546,7 @@ class RichSudoku {
         this.hints = new Hints(this.sudoku)
         this.timer = new Timer()
         this.difficulty = ""
+        this.conflicts = new ConflictsTracker(this.sudoku)
         this.reloading = 0
     }
 
@@ -432,7 +581,9 @@ class RichSudoku {
         if (this.freezer.at(pos)) {
             return
         }
+        const prevValue = this.sudoku.at(pos)
         this.sudoku.setAt(pos, value)
+        this.conflicts.recordChange(pos, prevValue)
         new ValueSetEvent(pos, value).emit()
         if (value > 0 && this.sudoku.isDone()) {
             new SudokuSolvedEvent().emit()
@@ -491,7 +642,7 @@ class RichSudoku {
             "frozen": this.freezer.frozen,
             "timer": {
                 "value": this.timer.value(),
-            }
+            },
         })
     }
 
@@ -508,8 +659,8 @@ class RichSudoku {
         }
 
         this.reloading++
-
         const obj = JSON.parse(cachedSudoku)
+
         const size = obj["sudoku"]["size"]
         const board = obj["sudoku"]["values"]
         const difficulty = obj["sudoku"]["difficulty"]
@@ -557,7 +708,6 @@ class RichSudoku {
         this.timer.resume()
 
         new SudokuGameLoadEvent().emit()
-
         this.reloading--
         this.save()
         return true
@@ -575,4 +725,5 @@ export {
     FreezeEvent,
     SudokuSolvedEvent,
     SudokuGameLoadEvent,
+    ConflictMarkEvent,
 }
