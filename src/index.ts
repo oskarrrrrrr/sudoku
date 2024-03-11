@@ -22,26 +22,37 @@ function getDiv(id: string): HTMLDivElement {
     return el
 }
 
+function getButton(id: string): HTMLButtonElement {
+    let el = document.getElementById(id)
+    if (el == null) {
+        throw new Error(`button with id ${id} not found`)
+    }
+    if (!(el instanceof HTMLButtonElement)) {
+        throw new Error(`DOM element with id ${id} expected to be a button`)
+    }
+    return el
+}
+
 // INPUT MODE
 
-type InputMode = "normal" | "hint"
+type InputMode = "pen" | "pencil"
 
 function isInputMode(s: string): s is InputMode {
-    return s == "normal" || s == "hint"
+    return s == "pen" || s == "pencil"
 }
 
 function getInputModeDiv(): HTMLDivElement {
     return getDiv("input-mode-button")
 }
 
-function toggleInputMode() {
+function toggleInputMode(): void {
     let inputModeDiv = getInputModeDiv()
     switch (inputModeDiv.innerText) {
-    case "normal":
-        inputModeDiv.innerText = "hint"
+    case "pen":
+        inputModeDiv.innerText = "pencil"
         break
-    case "hint":
-        inputModeDiv.innerText = "normal"
+    case "pencil":
+        inputModeDiv.innerText = "pen"
         break
     default:
         throw new Error(`Unexpected input mode: ${inputModeDiv.innerText}`)
@@ -79,10 +90,10 @@ function highlightSudokuCell(cell: HTMLDivElement): void {
 
 function handleDigitInput(value: number) {
     switch (getInputMode()) {
-        case "normal":
+        case "pen":
             richSudoku.set(value)
             break
-        case "hint":
+        case "pencil":
             richSudoku.toggleHint(value)
             break
     }
@@ -149,7 +160,7 @@ function setCellValue(pos: [number, number], value: number): void {
     } else {
         if (richSudoku.conflicts.at(pos)) {
             cell.innerHTML = (
-                `${value.toString()}<div class="circle"></div>`
+                `${value.toString()}<div class="conflict-circle"></div>`
             )
         } else {
             cell.innerText = value.toString()
@@ -209,10 +220,7 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 })
 
 SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
-    getDifficultyDiv().innerText = (
-        richSudoku.difficulty + " | " +
-        richSudoku.freezer.frozenCount.toString() + " hints"
-    )
+    getDifficultyDiv().innerText = richSudoku.difficulty
 })
 
 ConflictMarkEvent.listen((e: ConflictMarkEvent) => {
@@ -263,12 +271,17 @@ for (let i = 1; i < 11; i++) {
 let button = getDiv("input-mode-button")
 button.onclick = toggleInputMode
 
-let newGameButton = getDiv("new-game-button")
+let newGameButton = getButton("new-game-button")
 newGameButton.onclick = async() => {
     const msg = "Do you want to start a new game?\nCurrent progress will be lost."
     if (window.confirm(msg)) {
         await newGame()
     }
+}
+
+let settingsButton = getButton("settings-button")
+settingsButton.onclick = () => {
+    alert("Coming soon.")
 }
 
 for (let row = 0; row < richSudoku.sudoku.rows; row++) {
@@ -277,7 +290,6 @@ for (let row = 0; row < richSudoku.sudoku.rows; row++) {
         cell.onclick = () => highlightSudokuCell(cell)
     }
 }
-
 
 // TIMER
 

@@ -51,12 +51,12 @@ func generateTemplateInput(n int) TemplateInput {
 	rows := make([]SudokuRow, n*n)
 	for rowIdx := range rows {
 		row := &rows[rowIdx]
-		if rowIdx+1 < n*n && (rowIdx+1)%n == 0 {
+		if (rowIdx+1)%n == 0 && rowIdx+1 < n*n {
 			row.HorizBorder = true
 		}
 		row.Cells = make([]SudokuCell, n*n)
 		for colIdx := 0; colIdx < n*n; colIdx++ {
-            posStr := strconv.Itoa(rowIdx) + "-" + strconv.Itoa(colIdx)
+			posStr := strconv.Itoa(rowIdx) + "-" + strconv.Itoa(colIdx)
 			row.Cells[colIdx].Id = "sudoku-cell-" + posStr
 			if (colIdx+1)%n == 0 && colIdx+1 < n*n {
 				row.Cells[colIdx].VertBorder = true

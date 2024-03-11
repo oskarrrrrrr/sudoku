@@ -1,11 +1,8 @@
-.circle {
-    position: absolute;
-    top: 75%;
-    left: 45%;
-    width: 10%;
-    height: 10%;
-    background-color: #d22020;
-    border-radius: 50%;
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
 }
 
 .prevent-select {
@@ -14,59 +11,130 @@
     user-select: none; /* Standard syntax */
 }
 
-.sudoku-header {
-    height: 100px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: row;
+body {
+    margin: 0;
+    padding: 0;
+}
 
-    @media screen and (max-width: 600px) {
-        display: none;
+#top-bar {
+    height: 90px;
+    width: 100%;
+
+    margin-bottom: 10px;
+    @media screen and (max-width: 500px) {
+        margin-bottom: 5px;
     }
 }
 
-.sudoku-title {
-    font-size: 4em;
-    margin: 15px;
-    cursor: default;
-}
+#top-bar-content {
+    height: 100%;
+    width: 90vw;
+    max-width: 675px;
 
-.sudoku-status {
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    flex-direction: row;
+    align-content: space-between;
+    justify-content: space-between;
     align-items: flex-end;
-    font-size: 1.5em;
-    margin: 15px;
 }
 
-#game-difficulty {
-    font-size: 0.75em;
+.top-bar-button {
+    border: none;
+    background: none;
+    margin-bottom: 5px;
+
+    font-size: 1.1em;
+    @media screen and (max-width: 500px) {
+        font-size: 1em;
+    }
+    @media screen and (max-width: 400px) {
+        font-size: .9em;
+    }
+    @media screen and (max-width: 350px) {
+        font-size: .8em;
+    }
 }
 
-.main {
+.top-bar-button:hover {
+    background: #E4E4E4;
+    border-radius: 5px;
+}
+
+#new-game-button {
+    margin-left: 5px;
+}
+
+#settings-button {
+    margin-right: 5px;
+}
+
+#sudoku-title {
+    font-size: 4em;
+    cursor: default;
+
+    @media screen and (max-width: 500px) {
+        font-size: 3.2em;
+    }
+    @media screen and (max-width: 400px) {
+        font-size: 2.8em;
+    }
+    @media screen and (max-width: 350px) {
+        font-size: 2.5em;
+    }
+}
+
+#main {
     width: 95vw;
     max-width: 675px;
 
     display: flex;
     align-items: center;
     flex-direction: column;
+
+    gap: 20px;
+    @media screen and (max-width: 500px) {
+        gap: 10px;
+    }
 }
 
-.sudoku-table {
+#sudoku-header {
+    height: 50px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 5px;
+
+    font-size: 1.5em;
+    @media screen and (max-width: 500px) {
+        font-size: 1.3em;
+    }
+    @media screen and (max-width: 400px) {
+        font-size: 1.1em;
+    }
+}
+
+#sudoku-table {
     position: relative;
 
     width: 95vw;
     max-width: 675px;
+    min-width: 250px;
 
     border: 5px solid black;
     border-collapse: collapse;
 
-    cursor: pointer;
-
     @media screen and (max-width: 600px) {
         border: 3px solid black;
+    }
+
+    @media screen and (max-width: 500px) {
+        border: 2px solid black;
+    }
+
+    @media screen and (max-width: 400px) {
+        border: 2px solid black;
     }
 }
 
@@ -74,26 +142,37 @@
     display: flex;
     align-items: stretch;
     flex-direction: row;
-    justify-content: space-evenly;
+}
+
+.conflict-circle {
+    position: absolute;
+    top: 75%;
+    left: 45%;
+    width: 12%;
+    height: 12%;
+    background-color: #D22020;
+    border-radius: 50%;
 }
 
 .sudoku-cell {
-    border: 1px solid black;
+    font-family: Helvetica, sans-serif;
+
+    border: 1px solid #494949;
     border-collapse: collapse;
 
     position: relative;
-
     width: 75px;
     aspect-ratio: 1/1;
 
     font-size: 2.5em;
-
     @media screen and (max-width: 600px) {
-        font-size: 2.0em;
+        font-size: 2em;
     }
-
-    @media screen and (max-width: 400px) {
+    @media screen and (max-width: 500px) {
         font-size: 1.5em;
+    }
+    @media screen and (max-width: 400px) {
+        font-size: 1.3em;
     }
 }
 
@@ -102,7 +181,7 @@
 }
 
 .sudoku-cell-frozen {
-    background: #DDDDDD;
+    background: #E4E4E4;
 }
 
 .sudoku-cell-cursor.sudoku-cell-frozen {
@@ -118,7 +197,7 @@
 }
 
 .sudoku-horiz-border {
-    border-bottom: 3px solid black;
+    border-bottom: 2px solid black;
 
     @media screen and (max-width: 600px) {
         border-bottom: 1px solid black;
@@ -148,93 +227,80 @@
     @media screen and (max-width: 600px) {
         font-size: 12px;
     }
-
+    @media screen and (max-width: 500px) {
+        font-size: 10px;
+    }
     @media screen and (max-width: 400px) {
         font-size: 8px;
     }
 }
 
-.flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
-
-.digit-btns {
-    flex: 1 0;
+#digit-btns {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
 .digit-btn-row {
-    width: 100%;
-    margin-top: 20px;
+    width: 95vw;
+    max-width: 675px;
+    min-width: 250px;
 
     display: flex;
     flex-direction: row;
-    justify-content: center;
+
     gap: 10px;
-
     @media screen and (max-width: 600px) {
-        margin-top: 15px;
-    }
-
-    @media screen and (max-width: 400px) {
-        margin-top: 10px;
-    }
-
-    @media screen and (max-width: 350px) {
-        margin-top: 8px;
+        gap: 2px;
     }
 }
 
-.control-btn {
-    background-color: #DDDDDD;
+.digit-btn-row > div {
+    flex: 1;
+}
 
-    border: 1px solid black;
+.control-btn {
+    font-family: Helvetica, sans-serif;
+
     border-collapse: collapse;
     border-radius: 5px;
 
-    width: 80px;
-    aspect-ratio: 1/1;
+    aspect-ratio: 5/6;
 
-    font-size: 2.5em;
 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    font-size: 2.0em;
     @media screen and (max-width: 600px) {
-        width: 55px;
-        font-size: 1.8em;
+        font-size: 2em;
     }
-
-    @media screen and (max-width: 400px) {
-        width: 45px;
+    @media screen and (max-width: 500px) {
         font-size: 1.5em;
     }
-
-    @media screen and (max-width: 350px) {
-        width: 38px;
+    @media screen and (max-width: 400px) {
         font-size: 1.3em;
     }
 }
 
 .control-btn:hover {
-    background-color: #ADD8E6;
-    cursor: pointer;
+    background: #E4E4E4;
+    border-radius: 5px;
 }
 
 .digit-btn-text {
-    font-size: 1.3em;
+    font-size: 0.95em;
 
+    font-size: 1.1em;
     @media screen and (max-width: 600px) {
-        font-size: 1.0em;
+        font-size: .9em;
     }
-
+    @media screen and (max-width: 500px) {
+        font-size: .75em;
+    }
     @media screen and (max-width: 400px) {
-        font-size: 0.9em;
-    }
-
-    @media screen and (max-width: 350px) {
-        font-size: 0.7em;
+        font-size: .50em;
     }
 }

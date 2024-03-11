@@ -8,42 +8,46 @@
     <link rel="stylesheet" href="./style.css">
   </head>
   <body class="flex-center">
-    <div class="main">
-        <div class="sudoku-header">
-            <h1 class="sudoku-title prevent-select">sudoku</h1>
-            <div class="sudoku-status">
-                <div id="game-timer"></div>
-                <div id="game-difficulty"></div>
-            </div>
+    <div id="top-bar" class="flex-center">
+        <div id="top-bar-content">
+            <button id="new-game-button" class="top-bar-button">new game</button>
+            <div id="sudoku-title">sudoku</div>
+            <button id="settings-button" class="top-bar-button">settings</button>
         </div>
-        <div class="sudoku-table prevent-select blur">
+    </div>
+    <div id="main">
+        <div id="sudoku-header">
+            <div id="game-difficulty"></div>
+            <div id="game-timer"></div>
+        </div>
+        <div id="sudoku-table" class="prevent-select">
             {{- range $row := .Sudoku.Rows}}
-                <div class="sudoku-row {{if $row.HorizBorder}}sudoku-horiz-border{{end}}">
+                <div class="sudoku-row
+                {{if $row.HorizBorder}}sudoku-horiz-border{{end}}">
                     {{- range $cell := $row.Cells}}
                         <div
                             id="{{$cell.Id}}"
-                            class="sudoku-cell flex-center {{if $cell.VertBorder}}sudoku-vert-border{{end}}"
+                            class="sudoku-cell flex-center
+                            {{if $cell.VertBorder}}sudoku-vert-border{{end}}"
                         ></div>
                     {{- end}}
                 </div>
             {{- end}}
         </div>
-        <div class="digit-btns prevent-select">
+        <div id="digit-btns" class="prevent-select">
             <div class="digit-btn-row">
-                <div id="digit-btn-1" class="control-btn flex-center">1</div>
-                <div id="digit-btn-2" class="control-btn flex-center">2</div>
-                <div id="digit-btn-3" class="control-btn flex-center">3</div>
-                <div id="digit-btn-4" class="control-btn flex-center">4</div>
-                <div id="digit-btn-5" class="control-btn flex-center">5</div>
-                <div id="input-mode-button" class="control-btn digit-btn-text flex-center">normal</div>
-            </div>
-            <div class="digit-btn-row">
-                <div id="digit-btn-6" class="control-btn flex-center">6</div>
-                <div id="digit-btn-7" class="control-btn flex-center">7</div>
-                <div id="digit-btn-8" class="control-btn flex-center">8</div>
-                <div id="digit-btn-9" class="control-btn flex-center">9</div>
-                <div id="digit-btn-x" class="control-btn flex-center"> </div>
-                <div id="new-game-button" class="control-btn digit-btn-text flex-center">new<br>game</div>
+                <div id="digit-btn-1" class="control-btn">1</div>
+                <div id="digit-btn-2" class="control-btn">2</div>
+                <div id="digit-btn-3" class="control-btn">3</div>
+                <div id="digit-btn-4" class="control-btn">4</div>
+                <div id="digit-btn-5" class="control-btn">5</div>
+                <div id="digit-btn-6" class="control-btn">6</div>
+                <div id="digit-btn-7" class="control-btn">7</div>
+                <div id="digit-btn-8" class="control-btn">8</div>
+                <div id="digit-btn-9" class="control-btn">9</div>
+                <div id="digit-btn-x" class="control-btn">x</div>
+                <div id="input-mode-button" class="control-btn digit-btn-text">
+                    pen</div>
             </div>
         </div>
     </div>
