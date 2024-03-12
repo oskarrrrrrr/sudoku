@@ -388,7 +388,7 @@ class Timer {
         const seconds = Math.floor(diff / 1000)
         let result = ""
         if (hours > 0) {
-            result = result + hours.toString() + "hrs "
+            result = result + hours.toString() + "h "
         }
         if (hours > 0 || minutes > 0) {
             result = result + minutes.toString() + "m "

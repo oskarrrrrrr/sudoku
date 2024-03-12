@@ -10,27 +10,31 @@ import {
     ConflictMarkEvent,
 } from "./richSudoku.js"
 
-
-function getDiv(id: string): HTMLDivElement {
+function getHtmlElement<T extends HTMLElement>(id: string, type: { new(): T; }, typeName: string): T {
     let el = document.getElementById(id)
     if (el == null) {
-        throw new Error(`div with id ${id} not found`)
+        const msg = `'${typeName}' with id '${id}' not found`
+        console.log(msg)
+        throw new Error(msg)
     }
-    if (!(el instanceof HTMLDivElement)) {
-        throw new Error(`DOM element with id ${id} expected to be a div`)
+    if (!(el instanceof type)) {
+        const msg = `DOM element with id '${id}' expected to be a '${typeName}'`
+        console.log(msg)
+        throw new Error(msg)
     }
     return el
 }
 
+function getDiv(id: string): HTMLDivElement {
+    return getHtmlElement(id, HTMLDivElement, "div")
+}
+
 function getButton(id: string): HTMLButtonElement {
-    let el = document.getElementById(id)
-    if (el == null) {
-        throw new Error(`button with id ${id} not found`)
-    }
-    if (!(el instanceof HTMLButtonElement)) {
-        throw new Error(`DOM element with id ${id} expected to be a button`)
-    }
-    return el
+    return getHtmlElement(id, HTMLButtonElement, "button")
+}
+
+function getDialog(id: string): HTMLDialogElement {
+    return getHtmlElement(id, HTMLDialogElement, "dialog")
 }
 
 // INPUT MODE
@@ -48,14 +52,14 @@ function getInputModeDiv(): HTMLDivElement {
 function toggleInputMode(): void {
     let inputModeDiv = getInputModeDiv()
     switch (inputModeDiv.innerText) {
-    case "pen":
-        inputModeDiv.innerText = "pencil"
-        break
-    case "pencil":
-        inputModeDiv.innerText = "pen"
-        break
-    default:
-        throw new Error(`Unexpected input mode: ${inputModeDiv.innerText}`)
+        case "pen":
+            inputModeDiv.innerText = "pencil"
+            break
+        case "pencil":
+            inputModeDiv.innerText = "pen"
+            break
+        default:
+            throw new Error(`Unexpected input mode: ${inputModeDiv.innerText}`)
     }
 }
 
@@ -181,7 +185,7 @@ function getHintsHtml(hints: boolean[]): string {
     function getHintsRow(digits: number[]): string {
         let result = `<div class="hint-row">`
         for (const d of digits) {
-            result += getHint(hints[d-1] ? d : 0)
+            result += getHint(hints[d - 1] ? d : 0)
         }
         result += `</div>`
         return result
@@ -189,9 +193,9 @@ function getHintsHtml(hints: boolean[]): string {
 
     return `
         <div class="hint-wrapper">
-            ${getHintsRow([1,2,3])}
-            ${getHintsRow([4,5,6])}
-            ${getHintsRow([7,8,9])}
+            ${getHintsRow([1, 2, 3])}
+            ${getHintsRow([4, 5, 6])}
+            ${getHintsRow([7, 8, 9])}
         </div>
     `
 }
@@ -247,11 +251,15 @@ function sudokuFromStrList(s: string): number[][] {
     return result
 }
 
-async function newGame(): Promise<void> {
-    const response = await fetch("/api/random-sudoku")
+async function newGame(difficulty: Difficulty = "medium"): Promise<void> {
+    const params = new URLSearchParams({
+        "difficulty": difficulty,
+    })
+    const req = `/api/random-sudoku?${params.toString()}`
+    console.log(req)
+    const response = await fetch(req)
     const text = await response.text()
     const lines = text.split("\n")
-    let difficulty = lines[0]
     let sudoku = new Sudoku(3, sudokuFromStrList(lines[1]))
     shuffleSudoku(sudoku)
     richSudoku.newGame(sudoku, true, difficulty)
@@ -272,11 +280,33 @@ let button = getDiv("input-mode-button")
 button.onclick = toggleInputMode
 
 let newGameButton = getButton("new-game-button")
-newGameButton.onclick = async() => {
-    const msg = "Do you want to start a new game?\nCurrent progress will be lost."
-    if (window.confirm(msg)) {
-        await newGame()
-    }
+let newGameDialog = getDialog("new-game-dialog")
+let newGameDialogCloseButton = getDiv("new-game-dialog-close-button")
+let newGameEasy = getDiv("new-game-easy-button")
+let newGameMedium = getDiv("new-game-medium-button")
+let newGameHard = getDiv("new-game-hard-button")
+
+newGameButton.onclick = () => {
+    newGameDialog.showModal()
+}
+
+newGameDialogCloseButton.onclick = () => {
+    newGameDialog.close()
+}
+
+newGameEasy.onclick = async () => {
+    newGameDialog.close()
+    await newGame("easy")
+}
+
+newGameMedium.onclick = async () => {
+    newGameDialog.close()
+    await newGame("medium")
+}
+
+newGameHard.onclick = async () => {
+    newGameDialog.close()
+    await newGame("hard")
 }
 
 let settingsButton = getButton("settings-button")
@@ -297,16 +327,18 @@ function getTimerDiv(): HTMLDivElement {
     return getDiv("game-timer")
 }
 
-setInterval(function () {
+setInterval(function() {
     const timerDiv = getTimerDiv()
     const newTimerStr = richSudoku.timer.toString()
     if (timerDiv.innerText != newTimerStr) {
         timerDiv.innerText = newTimerStr
     }
 }, 50)
-setInterval(function () { richSudoku.save() }, 500)
+setInterval(function() { richSudoku.save() }, 500)
 
 // DIFFICULTY
+
+type Difficulty = "easy" | "medium" | "hard"
 
 function getDifficultyDiv(): HTMLDivElement {
     return getDiv("game-difficulty")
