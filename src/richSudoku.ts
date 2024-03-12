@@ -347,6 +347,8 @@ class Freezer {
     }
 }
 
+type TimerState = "running" | "paused"
+
 class Timer {
     accumulator: number
     start: Date | null
@@ -354,6 +356,13 @@ class Timer {
     constructor() {
         this.accumulator = 0
         this.start = null
+    }
+
+    status(): TimerState {
+        if (this.start == null) {
+            return "paused"
+        }
+        return "running"
     }
 
     getDiff(): number {

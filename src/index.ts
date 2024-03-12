@@ -37,6 +37,10 @@ function getDialog(id: string): HTMLDialogElement {
     return getHtmlElement(id, HTMLDialogElement, "dialog")
 }
 
+function getImg(id: string): HTMLImageElement {
+    return getHtmlElement(id, HTMLImageElement, "image")
+}
+
 // INPUT MODE
 
 type InputMode = "pen" | "pencil"
@@ -129,6 +133,14 @@ document.onkeydown = (e: KeyboardEvent) => {
         case "m":
             toggleInputMode()
             break
+        case " ":
+            if (pauseDialog.open) {
+                pauseDialog.close()
+            }
+            if (richSudoku.timer.status() == "running") {
+                richSudoku.timer.pause()
+                pauseDialog.showModal()
+            }
     }
 };
 
@@ -256,7 +268,6 @@ async function newGame(difficulty: Difficulty = "medium"): Promise<void> {
         "difficulty": difficulty,
     })
     const req = `/api/random-sudoku?${params.toString()}`
-    console.log(req)
     const response = await fetch(req)
     const text = await response.text()
     const lines = text.split("\n")
@@ -287,6 +298,7 @@ let newGameMedium = getDiv("new-game-medium-button")
 let newGameHard = getDiv("new-game-hard-button")
 
 newGameButton.onclick = () => {
+    richSudoku.timer.pause()
     newGameDialog.showModal()
 }
 
@@ -294,20 +306,38 @@ newGameDialogCloseButton.onclick = () => {
     newGameDialog.close()
 }
 
-newGameEasy.onclick = async () => {
-    newGameDialog.close()
-    await newGame("easy")
+newGameDialog.onclose = () => {
+    richSudoku.timer.resume()
 }
 
-newGameMedium.onclick = async () => {
-    newGameDialog.close()
-    await newGame("medium")
+const newGameButtons: [HTMLDivElement, Difficulty][] = [
+    [newGameEasy, "easy"],
+    [newGameMedium, "medium"],
+    [newGameHard, "hard"]
+]
+for (const [btn, diff] of newGameButtons) {
+    btn.onclick = async () => {
+        newGameDialog.close()
+        await newGame(diff)
+    }
 }
 
-newGameHard.onclick = async () => {
-    newGameDialog.close()
-    await newGame("hard")
+
+let pauseButton = getImg("pause-button")
+let resumeButton = getDiv("resume-button")
+let pauseDialog = getDialog("pause-dialog")
+
+pauseDialog.onclose = () => {
+    richSudoku.timer.resume()
 }
+pauseButton.onclick = () => {
+    richSudoku.timer.pause()
+    pauseDialog.showModal()
+}
+resumeButton.onclick = () => {
+    pauseDialog.close()
+}
+
 
 let settingsButton = getButton("settings-button")
 settingsButton.onclick = () => {
@@ -328,13 +358,18 @@ function getTimerDiv(): HTMLDivElement {
 }
 
 setInterval(function() {
+    if (richSudoku.timer.status() != "running") {
+        return
+    }
     const timerDiv = getTimerDiv()
     const newTimerStr = richSudoku.timer.toString()
     if (timerDiv.innerText != newTimerStr) {
         timerDiv.innerText = newTimerStr
     }
 }, 50)
-setInterval(function() { richSudoku.save() }, 500)
+
+// make sure that timer state is saved regularly
+setInterval(function() { richSudoku.save() }, 1000)
 
 // DIFFICULTY
 

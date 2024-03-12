@@ -2,12 +2,6 @@ button:active, input[type="button"]:active {
     outline: none;
 }
 
-dialog::backdrop {
-    -webkit-backdrop-filter: blur(7px);
-    backdrop-filter: blur(7px);
-
-}
-
 .flex-center {
     display: flex;
     justify-content: center;
@@ -54,6 +48,7 @@ body {
     border: none;
     background: none;
     margin-bottom: 5px;
+    padding: 8px;
 
     font-size: 1.1em;
     @media screen and (max-width: 500px) {
@@ -125,6 +120,19 @@ body {
     @media screen and (max-width: 400px) {
         font-size: 1.1em;
     }
+}
+
+#game-timer-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+#pause-button {
+    height: .7em;
+    margin: 0;
 }
 
 #sudoku-table {
@@ -201,18 +209,18 @@ body {
 }
 
 .sudoku-vert-border {
-    border-right: 3px solid black;
+    border-right: 3px solid #494949;
 
     @media screen and (max-width: 600px) {
-        border-right: 2px solid black;
+        border-right: 2px solid #494949;
     }
 }
 
 .sudoku-horiz-border {
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid #494949;
 
     @media screen and (max-width: 600px) {
-        border-bottom: 1px solid black;
+        border-bottom: 1px solid #494949;
     }
 }
 
@@ -317,6 +325,11 @@ body {
     }
 }
 
+dialog::backdrop {
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+}
+
 .dialog-close-button {
     font-family: Helvetica, sans-serif;
 
@@ -344,7 +357,7 @@ body {
 
 .dialog-button {
     font-size: 1.5em;
-    padding: 5px;
+    padding: 10px;
 }
 
 .dialog-button:hover {
@@ -356,8 +369,7 @@ body {
 #new-game-dialog {
     max-width: 600px;
     width: 80vw;
-    height: 200px;
-
+    height: 220px;
 }
 
 .dialog-content {
@@ -369,5 +381,11 @@ body {
     justify-content: center;
     align-items: center;
 
-    gap: 10px;
+    gap: 5px;
+}
+
+#pause-dialog {
+    max-width: 600px;
+    width: 80vw;
+    height: 150px;
 }

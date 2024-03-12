@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta content='yes' name='mobile-web-app-capable'/>
     <title>Sudoku</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="style.css">
   </head>
   <body class="flex-center">
     <div id="top-bar" class="flex-center">
@@ -21,7 +21,11 @@
     <div id="main">
         <div id="sudoku-header">
             <div id="game-difficulty"></div>
-            <div id="game-timer"></div>
+            <div id="game-timer-container">
+                <div id="game-timer"></div>
+                <img id="pause-button" draggable="false" src="assets/pause.svg"
+                    alt="pause" class="top-bar-button"/>
+            </div>
         </div>
         <div id="sudoku-table" class="prevent-select">
             {{- range $row := .Sudoku.Rows}}
@@ -61,6 +65,12 @@
             <div id="new-game-easy-button" class="dialog-button">easy</div>
             <div id="new-game-medium-button" class="dialog-button">medium</div>
             <div id="new-game-hard-button" class="dialog-button">hard</div>
+        </div>
+    </dialog>
+    <dialog id="pause-dialog" class="prevent-select">
+        <div class="dialog-content">
+            <div class="dialog-tittle">game paused</div>
+            <div id="resume-button" class="dialog-button">resume</div>
         </div>
     </dialog>
 	<script type="module" src="index.js"></script>
