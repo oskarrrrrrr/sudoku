@@ -41,6 +41,76 @@ function getImg(id: string): HTMLImageElement {
     return getHtmlElement(id, HTMLImageElement, "image")
 }
 
+// SETTINGS
+
+let settingsButton = getButton("settings-button")
+let settingsDialog = getDialog("settings-dialog")
+let settingsDialogCloseButton = getDiv("settings-dialog-close-button")
+settingsDialog.onclose = () => {
+    richSudoku.timer.resume()
+}
+settingsButton.onclick = () => {
+    richSudoku.timer.pause()
+    settingsDialog.showModal()
+    refreshHighlightConflictsSettings()
+}
+settingsDialogCloseButton.onclick = () => {
+    settingsDialog.close()
+}
+
+class SudokuSettings {
+    highlightConflicts: boolean
+
+    constructor() {
+        this.highlightConflicts = true
+    }
+
+    save(): void {
+        localStorage.setItem(
+            "highlightConflicts", this.highlightConflicts.toString()
+        )
+    }
+
+    load(): void {
+        const highlightConflicts = localStorage.getItem("highlightConflicts")
+        if (highlightConflicts != null) {
+            this.highlightConflicts = (highlightConflicts == "true")
+        }
+    }
+}
+
+
+let sudokuSettings = new SudokuSettings()
+sudokuSettings.load()
+
+let highlightConflictsYes = getDiv("highlight-conflicts-yes")
+let highlightConflictsNo = getDiv("highlight-conflicts-no")
+
+function refreshHighlightConflictsSettings() {
+    const toggleOptionSelected = "toggle-option-selected"
+    if (sudokuSettings.highlightConflicts) {
+        highlightConflictsYes.classList.add(toggleOptionSelected)
+        highlightConflictsNo.classList.remove(toggleOptionSelected)
+    } else {
+        highlightConflictsYes.classList.remove(toggleOptionSelected)
+        highlightConflictsNo.classList.add(toggleOptionSelected)
+    }
+}
+
+highlightConflictsYes.onclick = () => {
+    sudokuSettings.highlightConflicts = true
+    sudokuSettings.save()
+    refreshHighlightConflictsSettings()
+    refreshCells()
+}
+
+highlightConflictsNo.onclick = () => {
+    sudokuSettings.highlightConflicts = false
+    sudokuSettings.save()
+    refreshHighlightConflictsSettings()
+    refreshCells()
+}
+
 // INPUT MODE
 
 type InputMode = "pen" | "pencil"
@@ -174,12 +244,21 @@ function setCellValue(pos: [number, number], value: number): void {
     if (value == 0) {
         cell.innerText = ""
     } else {
-        if (richSudoku.conflicts.at(pos)) {
+        if (sudokuSettings.highlightConflicts && richSudoku.conflicts.at(pos)) {
             cell.innerHTML = (
                 `${value.toString()}<div class="conflict-circle"></div>`
             )
         } else {
             cell.innerText = value.toString()
+        }
+    }
+}
+
+function refreshCells(): void {
+    for (let row = 0; row < richSudoku.sudoku.rows; row++) {
+        for (let col = 0; col < richSudoku.sudoku.cols; col++) {
+            const pos: [number, number] = [row, col]
+            setCellValue(pos, richSudoku.sudoku.at(pos))
         }
     }
 }
@@ -280,6 +359,13 @@ if (!richSudoku.load()) {
     await newGame()
 }
 
+for (let row = 0; row < richSudoku.sudoku.rows; row++) {
+    for (let col = 0; col < richSudoku.sudoku.cols; col++) {
+        let cell = getSudokuCell([row, col])
+        cell.onclick = () => highlightSudokuCell(cell)
+    }
+}
+
 for (let i = 1; i < 11; i++) {
     const suffix = i <= 9 ? i.toString() : "x"
     const id = "digit-btn-" + suffix
@@ -336,19 +422,6 @@ pauseButton.onclick = () => {
 }
 resumeButton.onclick = () => {
     pauseDialog.close()
-}
-
-
-let settingsButton = getButton("settings-button")
-settingsButton.onclick = () => {
-    alert("Coming soon.")
-}
-
-for (let row = 0; row < richSudoku.sudoku.rows; row++) {
-    for (let col = 0; col < richSudoku.sudoku.cols; col++) {
-        let cell = getSudokuCell([row, col])
-        cell.onclick = () => highlightSudokuCell(cell)
-    }
 }
 
 // TIMER
