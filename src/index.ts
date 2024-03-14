@@ -258,7 +258,12 @@ function refreshCells(): void {
     for (let row = 0; row < richSudoku.sudoku.rows; row++) {
         for (let col = 0; col < richSudoku.sudoku.cols; col++) {
             const pos: [number, number] = [row, col]
-            setCellValue(pos, richSudoku.sudoku.at(pos))
+            const val = richSudoku.sudoku.at(pos)
+            // only refresh when cell is not empty
+            // otherwise we remove pencil hints
+            if (val != 0) {
+                setCellValue(pos, val)
+            }
         }
     }
 }
