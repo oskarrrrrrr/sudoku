@@ -47,9 +47,7 @@ let settingsButton = getButton("settings-button")
 let settingsDialog = getDialog("settings-dialog")
 let settingsDialogCloseButton = getDiv("settings-dialog-close-button")
 settingsDialog.onclose = () => {
-    if (!richSudoku.sudoku.isDone()) {
-        richSudoku.timer.resume()
-    }
+    resumeTimer()
 }
 settingsButton.onclick = () => {
     richSudoku.timer.pause()
@@ -169,6 +167,9 @@ function highlightSudokuCell(cell: HTMLDivElement): void {
 // INPUT HANDLERS
 
 function handleDigitInput(value: number) {
+    if (richSudoku.previouslyDone) {
+        return
+    }
     switch (getInputMode()) {
         case "pen":
             richSudoku.set(value)
@@ -183,7 +184,9 @@ document.onkeydown = (e: KeyboardEvent) => {
     switch (e.key) {
         case "Backspace":
         case "Delete":
-            richSudoku.clear()
+            if (!richSudoku.previouslyDone) {
+                richSudoku.clear()
+            }
             break
         case "1": case "2": case "3":
         case "4": case "5": case "6":
@@ -217,8 +220,8 @@ document.onkeydown = (e: KeyboardEvent) => {
 };
 
 function onDigitButtonClick(btn: HTMLDivElement): void {
-    if (!(btn instanceof HTMLDivElement)) {
-        throw new Error("Expected HTMLDivElement")
+    if (richSudoku.previouslyDone) {
+        return
     }
     const suffix = btn.id.split("-")[2]
     if (suffix == "x") {
@@ -323,11 +326,9 @@ endGameCloseButton.onclick = () => {
 SudokuSolvedEvent.listen((e: SudokuSolvedEvent) => {
     richSudoku.timer.pause()
     const time = richSudoku.timer.toString()
-    if (!e.loadedFromCache) {
-        const text = `Sudoku solved in ${time}!`
-        endGameText.innerText = text
-        endGameDialog.showModal()
-    }
+    const text = `Sudoku solved in ${time}!`
+    endGameText.innerText = text
+    endGameDialog.showModal()
 })
 
 SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
@@ -368,13 +369,10 @@ async function newGame(difficulty: Difficulty = "medium"): Promise<void> {
     const lines = text.split("\n")
     let sudoku = new Sudoku(3, sudokuFromStrList(lines[1]))
     shuffleSudoku(sudoku)
-    richSudoku.newGame(sudoku, true, difficulty)
-    startTimer()
+    richSudoku.newGame(sudoku, true, difficulty, false)
 }
 
-if (richSudoku.load()) {
-    refreshTimer()
-} else {
+if (!richSudoku.load()) {
     await newGame()
 }
 
@@ -412,9 +410,7 @@ newGameDialogCloseButton.onclick = () => {
 }
 
 newGameDialog.onclose = () => {
-    if (!richSudoku.sudoku.isDone()) {
-        richSudoku.timer.resume()
-    }
+    resumeTimer()
 }
 
 const newGameButtons: [HTMLDivElement, Difficulty][] = [
@@ -435,11 +431,12 @@ let resumeButton = getDiv("resume-button")
 let pauseDialog = getDialog("pause-dialog")
 
 pauseDialog.onclose = () => {
-    if (!richSudoku.sudoku.isDone()) {
-        richSudoku.timer.resume()
-    }
+    resumeTimer()
 }
 pauseButton.onclick = () => {
+    if (richSudoku.timer.status() != "running") {
+        return
+    }
     richSudoku.timer.pause()
     pauseDialog.showModal()
 }
@@ -455,19 +452,28 @@ function getTimerDiv(): HTMLDivElement {
 
 function refreshTimer(): void {
     const timerDiv = getTimerDiv()
-    const newTimerStr = richSudoku.timer.toString()
+    const newTimerStr = (
+        richSudoku.timer.toString() +
+        (richSudoku.previouslyDone ? " (solved)" : "")
+    )
     if (timerDiv.innerText != newTimerStr) {
         timerDiv.innerText = newTimerStr
     }
 }
 
-function startTimer(): void {
-    setInterval(function() {
-        if (richSudoku.timer.status() != "running") {
-            return
-        }
-        refreshTimer()
-    }, 50)
+setInterval(function() {
+    if (richSudoku.previouslyDone) {
+        pauseButton.classList.add("hide")
+    } else {
+        pauseButton.classList.remove("hide")
+    }
+    refreshTimer()
+}, 50)
+
+function resumeTimer(): void {
+    if (!richSudoku.sudoku.isDone()) {
+        richSudoku.timer.resume()
+    }
 }
 
 // make sure that timer state is saved regularly

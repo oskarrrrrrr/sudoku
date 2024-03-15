@@ -2,6 +2,10 @@ button:active, input[type="button"]:active {
     outline: none;
 }
 
+.hide {
+    display: none;
+}
+
 .flex-center {
     display: flex;
     justify-content: center;

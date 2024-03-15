@@ -75,10 +75,10 @@ class FreezeEvent {
 }
 
 class SudokuSolvedEvent {
-    loadedFromCache: boolean
+    previouslyDone: boolean
 
-    constructor(loadedFromCache: boolean) {
-        this.loadedFromCache = loadedFromCache
+    constructor(previouslyDone: boolean) {
+        this.previouslyDone = previouslyDone
     }
 
     emit(): void {
@@ -551,6 +551,7 @@ class RichSudoku {
     timer: Timer
     difficulty: string
     conflicts: ConflictsTracker
+    previouslyDone: boolean
 
     reloading: number
 
@@ -562,16 +563,18 @@ class RichSudoku {
         this.timer = new Timer()
         this.difficulty = ""
         this.conflicts = new ConflictsTracker(this.sudoku)
+        this.previouslyDone = false
         this.reloading = 0
     }
 
-    newGame(sudoku: Sudoku, freeze: boolean, difficulty: string) {
+    newGame(sudoku: Sudoku, freeze: boolean, difficulty: string, previouslyDone: boolean) {
         if (sudoku.n != this.sudoku.n) {
             throw new Error("inavlid sudoku size")
         }
         this.reloading++
         this.hints.clearAll()
         this.freezer.thawAll()
+        this.previouslyDone = previouslyDone
         for (let row = 0; row < sudoku.rows; row++) {
             for (let col = 0; col < sudoku.cols; col++) {
                 const newValue = sudoku.board[row][col]
@@ -600,9 +603,9 @@ class RichSudoku {
         this.sudoku.setAt(pos, value)
         this.conflicts.recordChange(pos, prevValue)
         new ValueSetEvent(pos, value).emit()
-        if (value > 0 && this.sudoku.isDone()) {
-            const loadedFromCache = this.reloading > 0
-            new SudokuSolvedEvent(loadedFromCache).emit()
+        if (value > 0 && this.sudoku.isDone() && !this.previouslyDone) {
+            new SudokuSolvedEvent(false).emit()
+            this.previouslyDone = true
         }
         this.save()
     }
@@ -659,6 +662,7 @@ class RichSudoku {
             "timer": {
                 "value": this.timer.value(),
             },
+            "previouslyDone": this.previouslyDone,
         })
     }
 
@@ -677,11 +681,13 @@ class RichSudoku {
         this.reloading++
         const obj = JSON.parse(cachedSudoku)
 
+        this.previouslyDone = obj["previouslyDone"]
+
         const size = obj["sudoku"]["size"]
         const board = obj["sudoku"]["values"]
         const difficulty = obj["sudoku"]["difficulty"]
         const sudoku = new Sudoku(size, board)
-        this.newGame(sudoku, false, difficulty)
+        this.newGame(sudoku, false, difficulty, this.previouslyDone)
 
         // freezer
         const frozen = obj["frozen"]
@@ -721,7 +727,7 @@ class RichSudoku {
             this.timer.accumulator = timerObj["value"]
         }
         this.timer.start = null
-        if (!this.sudoku.isDone()) {
+        if (!this.previouslyDone) {
             this.timer.resume()
         }
 
