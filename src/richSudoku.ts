@@ -75,6 +75,12 @@ class FreezeEvent {
 }
 
 class SudokuSolvedEvent {
+    loadedFromCache: boolean
+
+    constructor(loadedFromCache: boolean) {
+        this.loadedFromCache = loadedFromCache
+    }
+
     emit(): void {
         emitSudokuEvent("SudokuSolvedEvent", this)
     }
@@ -595,7 +601,8 @@ class RichSudoku {
         this.conflicts.recordChange(pos, prevValue)
         new ValueSetEvent(pos, value).emit()
         if (value > 0 && this.sudoku.isDone()) {
-            new SudokuSolvedEvent().emit()
+            const loadedFromCache = this.reloading > 0
+            new SudokuSolvedEvent(loadedFromCache).emit()
         }
         this.save()
     }
@@ -714,11 +721,14 @@ class RichSudoku {
             this.timer.accumulator = timerObj["value"]
         }
         this.timer.start = null
-        this.timer.resume()
+        if (!this.sudoku.isDone()) {
+            this.timer.resume()
+        }
 
         new SudokuGameLoadEvent().emit()
         this.reloading--
         this.save()
+
         return true
     }
 }

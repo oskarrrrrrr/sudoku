@@ -47,7 +47,9 @@ let settingsButton = getButton("settings-button")
 let settingsDialog = getDialog("settings-dialog")
 let settingsDialogCloseButton = getDiv("settings-dialog-close-button")
 settingsDialog.onclose = () => {
-    richSudoku.timer.resume()
+    if (!richSudoku.sudoku.isDone()) {
+        richSudoku.timer.resume()
+    }
 }
 settingsButton.onclick = () => {
     richSudoku.timer.pause()
@@ -310,13 +312,15 @@ FreezeEvent.listen((event: FreezeEvent) => {
     }
 })
 
-SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
+SudokuSolvedEvent.listen((e: SudokuSolvedEvent) => {
     richSudoku.timer.pause()
     const time = richSudoku.timer.toString()
-    setTimeout(
-        function() { alert("Sudoku solved in " + time + "!") },
-        50
-    )
+    if (!e.loadedFromCache) {
+        setTimeout(
+            function() { alert("Sudoku solved in " + time + "!") },
+            50
+        )
+    }
 })
 
 SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
@@ -358,9 +362,12 @@ async function newGame(difficulty: Difficulty = "medium"): Promise<void> {
     let sudoku = new Sudoku(3, sudokuFromStrList(lines[1]))
     shuffleSudoku(sudoku)
     richSudoku.newGame(sudoku, true, difficulty)
+    startTimer()
 }
 
-if (!richSudoku.load()) {
+if (richSudoku.load()) {
+    refreshTimer()
+} else {
     await newGame()
 }
 
@@ -398,7 +405,9 @@ newGameDialogCloseButton.onclick = () => {
 }
 
 newGameDialog.onclose = () => {
-    richSudoku.timer.resume()
+    if (!richSudoku.sudoku.isDone()) {
+        richSudoku.timer.resume()
+    }
 }
 
 const newGameButtons: [HTMLDivElement, Difficulty][] = [
@@ -419,7 +428,9 @@ let resumeButton = getDiv("resume-button")
 let pauseDialog = getDialog("pause-dialog")
 
 pauseDialog.onclose = () => {
-    richSudoku.timer.resume()
+    if (!richSudoku.sudoku.isDone()) {
+        richSudoku.timer.resume()
+    }
 }
 pauseButton.onclick = () => {
     richSudoku.timer.pause()
@@ -435,16 +446,22 @@ function getTimerDiv(): HTMLDivElement {
     return getDiv("game-timer")
 }
 
-setInterval(function() {
-    if (richSudoku.timer.status() != "running") {
-        return
-    }
+function refreshTimer(): void {
     const timerDiv = getTimerDiv()
     const newTimerStr = richSudoku.timer.toString()
     if (timerDiv.innerText != newTimerStr) {
         timerDiv.innerText = newTimerStr
     }
-}, 50)
+}
+
+function startTimer(): void {
+    setInterval(function() {
+        if (richSudoku.timer.status() != "running") {
+            return
+        }
+        refreshTimer()
+    }, 50)
+}
 
 // make sure that timer state is saved regularly
 setInterval(function() { richSudoku.save() }, 1000)
