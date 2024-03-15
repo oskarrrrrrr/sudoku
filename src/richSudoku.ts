@@ -142,7 +142,7 @@ function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
     name: SudokuEventName,
     event: SudokuEventT
 ): void {
-    const _event = new CustomEvent(name, {detail: event})
+    const _event = new CustomEvent(name, { detail: event })
     document.dispatchEvent(_event)
 }
 
@@ -229,8 +229,8 @@ class Cursor {
         this.sudoku = richSudoku.sudoku
         this.active = false
         this.pos = [
-            Math.floor(this.sudoku.rows/2),
-            Math.floor(this.sudoku.cols/2),
+            Math.floor(this.sudoku.rows / 2),
+            Math.floor(this.sudoku.cols / 2),
         ]
     }
 
@@ -262,7 +262,7 @@ class Cursor {
         const [row, col] = this.pos
         if (col + 1 < this.sudoku.cols) {
             const oldPos = this.pos
-            this.pos = [row, col+1]
+            this.pos = [row, col + 1]
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
@@ -273,7 +273,7 @@ class Cursor {
         const [row, col] = this.pos
         if (col > 0) {
             const oldPos = this.pos
-            this.pos = [row, col-1]
+            this.pos = [row, col - 1]
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
@@ -284,7 +284,7 @@ class Cursor {
         const [row, col] = this.pos
         if (row > 0) {
             const oldPos = this.pos
-            this.pos = [row-1, col]
+            this.pos = [row - 1, col]
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
@@ -295,7 +295,7 @@ class Cursor {
         const [row, col] = this.pos
         if (row + 1 < this.sudoku.rows) {
             const oldPos = this.pos
-            this.pos = [row+1, col]
+            this.pos = [row + 1, col]
             new CursorMoveEvent(oldPos, this.pos).emit()
         }
         this.active = true
@@ -397,7 +397,7 @@ class Timer {
     toString(): string {
         let diff = this.value()
         const hours = Math.floor(diff / (1000 * 60 * 60))
-        diff -= hours * 1000 * 60  * 60
+        diff -= hours * 1000 * 60 * 60
         const minutes = Math.floor(diff / (1000 * 60))
         diff -= minutes * 1000 * 60
         const seconds = Math.floor(diff / 1000)
@@ -440,7 +440,7 @@ class ConflictsTracker {
     newCountersArr(): number[][] {
         let arr = []
         for (let i = 0; i < this.sudoku.rows; i++) {
-            let subArr = Array(this.sudoku.values+1).fill(0)
+            let subArr = Array(this.sudoku.values + 1).fill(0)
             arr.push(subArr)
         }
         return arr
@@ -616,7 +616,7 @@ class RichSudoku {
 
     clear(): void {
         const pos = this.cursor.pos
-        if (!this.cursor.active || this.freezer.at(pos))  {
+        if (!this.cursor.active || this.freezer.at(pos)) {
             return
         }
         if (this.sudoku.at(pos) !== 0) {
@@ -633,7 +633,7 @@ class RichSudoku {
             return
         }
         const pos = this.cursor.pos
-        if (!this.cursor.active || this.freezer.at(pos))  {
+        if (!this.cursor.active || this.freezer.at(pos)) {
             return
         }
         if (this.sudoku.at(pos) !== 0) {
@@ -706,10 +706,10 @@ class RichSudoku {
         for (let row = 0; row < sudoku.rows; row++) {
             for (let col = 0; col < sudoku.cols; col++) {
                 for (let value = 0; value < sudoku.values; value++) {
-                    const idx = (row*sudoku.cols*sudoku.values)
-                        + (col*sudoku.values) + value
+                    const idx = (row * sudoku.cols * sudoku.values)
+                        + (col * sudoku.values) + value
                     if (hints[idx]) {
-                        this.hints.toggle([row, col], value+1, true)
+                        this.hints.toggle([row, col], value + 1, true)
                     }
                 }
             }

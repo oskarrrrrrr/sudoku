@@ -423,3 +423,9 @@ dialog::backdrop {
     background: #E4E4E4;
     border-radius: 5px;
 }
+
+#end-game-dialog {
+    max-width: 600px;
+    width: 80vw;
+    height: 150px;
+}

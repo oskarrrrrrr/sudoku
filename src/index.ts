@@ -312,14 +312,21 @@ FreezeEvent.listen((event: FreezeEvent) => {
     }
 })
 
+let endGameDialog = getDialog("end-game-dialog")
+let endGameText = getDiv("end-game-dialog-text")
+let endGameCloseButton = getDiv("end-game-close-button")
+
+endGameCloseButton.onclick = () => {
+    endGameDialog.close()
+}
+
 SudokuSolvedEvent.listen((e: SudokuSolvedEvent) => {
     richSudoku.timer.pause()
     const time = richSudoku.timer.toString()
     if (!e.loadedFromCache) {
-        setTimeout(
-            function() { alert("Sudoku solved in " + time + "!") },
-            50
-        )
+        const text = `Sudoku solved in ${time}!`
+        endGameText.innerText = text
+        endGameDialog.showModal()
     }
 })
 
