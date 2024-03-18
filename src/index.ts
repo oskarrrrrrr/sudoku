@@ -114,10 +114,7 @@ highlightConflictsNo.onclick = () => {
 // INPUT MODE
 
 type InputMode = "pen" | "pencil"
-
-function isInputMode(s: string): s is InputMode {
-    return s == "pen" || s == "pencil"
-}
+let inputMode: InputMode = "pen"
 
 function getInputModeDiv(): HTMLDivElement {
     return getDiv("input-mode-button")
@@ -125,25 +122,17 @@ function getInputModeDiv(): HTMLDivElement {
 
 function toggleInputMode(): void {
     let inputModeDiv = getInputModeDiv()
-    switch (inputModeDiv.innerText) {
+    switch (inputMode) {
         case "pen":
-            inputModeDiv.innerText = "pencil"
+            inputMode = "pencil"
             break
         case "pencil":
-            inputModeDiv.innerText = "pen"
+            inputMode = "pen"
             break
         default:
-            throw new Error(`Unexpected input mode: ${inputModeDiv.innerText}`)
+            throw new Error(`Unexpected input mode: ${inputMode}`)
     }
-}
-
-function getInputMode(): InputMode {
-    const inputModeDiv = getInputModeDiv()
-    const text = inputModeDiv.innerText
-    if (isInputMode(text)) {
-        return text
-    }
-    throw new Error(`Expected input mode, got: ${text}`)
+    inputModeDiv.innerText = inputMode
 }
 
 // SUDOKU CELLS UTILITIES
@@ -170,7 +159,7 @@ function handleDigitInput(value: number) {
     if (richSudoku.previouslyDone) {
         return
     }
-    switch (getInputMode()) {
+    switch (inputMode) {
         case "pen":
             richSudoku.set(value)
             break
