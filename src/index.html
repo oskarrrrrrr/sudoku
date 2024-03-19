@@ -23,8 +23,14 @@
             <div id="game-difficulty"></div>
             <div id="game-timer-container">
                 <div id="game-timer"></div>
-                <img id="pause-button" draggable="false" src="assets/pause.svg"
-                    alt="pause" class="top-bar-button"/>
+                <div id="pause-button" class="top-bar-button flex-center">
+                    <svg version="1.1" viewBox="0 0 14.931 22.315" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(-46.567 -115.89)" stroke-width=".26458">
+                            <path d="m46.699 116.02h5.7499v22.05h-5.7499z" fill="currentColor"/>
+                            <path d="m55.615 116.02h5.7499v22.05h-5.7499z" fill="currentColor"/>
+                        </g>
+                    </svg>
+                </div>
             </div>
         </div>
         <div id="sudoku-table" class="prevent-select">
@@ -78,10 +84,17 @@
         <div class="dialog-content">
             <div class="dialog-tittle">settings</div>
             <div class="toggle-setting">
-                <div id="">highlight conflicts</div>
+                <div>highlight conflicts</div>
                 <div class="toggle-options">
                     <div id="highlight-conflicts-yes" class="toggle-option">yes</div>
                     <div id="highlight-conflicts-no" class="toggle-option">no</div>
+                </div>
+            </div>
+            <div class="toggle-setting">
+                <div>theme</div>
+                <div class="toggle-options">
+                    <div id="theme-light" class="toggle-option">light</div>
+                    <div id="theme-dark" class="toggle-option">dark</div>
                 </div>
             </div>
         </div>

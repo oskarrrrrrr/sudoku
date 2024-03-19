@@ -53,28 +53,45 @@ settingsButton.onclick = () => {
     richSudoku.timer.pause()
     settingsDialog.showModal()
     refreshHighlightConflictsSettings()
+    refreshThemeSettings()
 }
 settingsDialogCloseButton.onclick = () => {
     settingsDialog.close()
 }
 
+type Theme = "light" | "dark"
+
+function isTheme(s: string): s is Theme {
+    return s == "light" || s == "dark"
+}
+
 class SudokuSettings {
     highlightConflicts: boolean
+    theme: Theme
 
     constructor() {
         this.highlightConflicts = true
+        this.theme = "light"
     }
 
     save(): void {
         localStorage.setItem(
             "highlightConflicts", this.highlightConflicts.toString()
         )
+        localStorage.setItem("theme", this.theme)
     }
 
     load(): void {
         const highlightConflicts = localStorage.getItem("highlightConflicts")
         if (highlightConflicts != null) {
             this.highlightConflicts = (highlightConflicts == "true")
+        }
+        const theme = localStorage.getItem("theme")
+        if (theme != null) {
+            if (!isTheme(theme)) {
+                throw new Error(`unexpected theme value in local storage: ${theme}`)
+            }
+            this.theme = theme
         }
     }
 }
@@ -110,6 +127,44 @@ highlightConflictsNo.onclick = () => {
     refreshHighlightConflictsSettings()
     refreshCells()
 }
+
+let themeLight = getDiv("theme-light")
+let themeDark = getDiv("theme-dark")
+
+function refreshThemeSettings() {
+    const toggleOptionSelected = "toggle-option-selected"
+    if (sudokuSettings.theme == "light") {
+        themeLight.classList.add(toggleOptionSelected)
+        themeDark.classList.remove(toggleOptionSelected)
+    } else {
+        themeLight.classList.remove(toggleOptionSelected)
+        themeDark.classList.add(toggleOptionSelected)
+    }
+}
+
+function setTheme(theme: Theme): void {
+    document.documentElement.setAttribute("data-theme", theme)
+    const dialogs = document.querySelectorAll('dialog');
+    dialogs.forEach(dialog => {
+        dialog.setAttribute("data-theme", "dark");
+    });
+}
+
+themeLight.onclick = () => {
+    sudokuSettings.theme = "light"
+    sudokuSettings.save()
+    refreshThemeSettings()
+    setTheme("light")
+}
+
+themeDark.onclick = () => {
+    sudokuSettings.theme = "dark"
+    sudokuSettings.save()
+    refreshThemeSettings()
+    setTheme("dark")
+}
+
+setTheme(sudokuSettings.theme)
 
 // INPUT MODE
 
@@ -415,7 +470,7 @@ for (const [btn, diff] of newGameButtons) {
 }
 
 
-let pauseButton = getImg("pause-button")
+let pauseButton = getDiv("pause-button")
 let resumeButton = getDiv("resume-button")
 let pauseDialog = getDialog("pause-dialog")
 

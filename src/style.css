@@ -1,3 +1,42 @@
+:root {
+    --main-bg-color: white;
+    --main-font-color: black;
+    --sudoku-main-border-color: black;
+    --sudoku-inside-border-color: #494949;
+    --sudoku-cell-frozen-color: #E4E4E4;
+    --sudoku-cell-cursor-color: #ADD8E6;
+    --sudoku-cell-cursor-on-frozen-color: #7DB5C8;
+    --sudoku-conflict-circle-color: #D22020;
+    --button-highlight-color: #E4E4E4;
+}
+
+:root[data-theme="dark"] {
+    --main-bg-color: #282828;
+    --main-font-color: #EDEDED;
+    --sudoku-main-border-color: #EDEDED;
+    --sudoku-inside-border-color: #A7A7A7;
+    --sudoku-cell-frozen-color: #3B3B3B;
+    --sudoku-cell-cursor-color: #166984;
+    --sudoku-cell-cursor-on-frozen-color: #4D92A9;
+    --sudoku-conflict-circle-color: #9c2323;
+    --button-highlight-color: #646464;
+}
+
+dialog[data-theme="dark"] {
+    background-color: var(--main-bg-color);
+    color: var(--main-font-color);
+}
+
+button, input[type="submit"], input[type="reset"] {
+	background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+	outline: inherit;
+}
+
 button:active, input[type="button"]:active {
     outline: none;
 }
@@ -24,6 +63,9 @@ button:active, input[type="button"]:active {
 body {
     margin: 0;
     padding: 0;
+
+    color: var(--main-font-color);
+    background-color: var(--main-bg-color);
 }
 
 #top-bar {
@@ -67,7 +109,7 @@ body {
 }
 
 .top-bar-button:hover {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
@@ -135,6 +177,7 @@ body {
 }
 
 #pause-button {
+    width: .7em;
     height: .7em;
     margin: 0;
 }
@@ -146,7 +189,9 @@ body {
     max-width: 675px;
     min-width: 250px;
 
-    border: 5px solid black;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--sudoku-main-border-color);
     border-collapse: collapse;
 
     @media screen and (max-width: 600px) {
@@ -174,14 +219,16 @@ body {
     left: 45%;
     width: 12%;
     height: 12%;
-    background-color: #D22020;
+    background-color: var(--sudoku-conflict-circle-color);
     border-radius: 50%;
 }
 
 .sudoku-cell {
     font-family: Helvetica, sans-serif;
 
-    border: 1px solid #494949;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--sudoku-inside-border-color);
     border-collapse: collapse;
 
     position: relative;
@@ -201,30 +248,30 @@ body {
 }
 
 .sudoku-cell-cursor {
-    background: #ADD8E6;
+    background: var(--sudoku-cell-cursor-color);
 }
 
 .sudoku-cell-frozen {
-    background: #E4E4E4;
+    background: var(--sudoku-cell-frozen-color);
 }
 
 .sudoku-cell-cursor.sudoku-cell-frozen {
-    background: #7DB5C8;
+    background: var(--sudoku-cell-cursor-on-frozen-color);
 }
 
 .sudoku-vert-border {
-    border-right: 3px solid #494949;
+    border-right: 3px solid var(--sudoku-inside-border-color);
 
     @media screen and (max-width: 600px) {
-        border-right: 2px solid #494949;
+        border-right-width: 2px;
     }
 }
 
 .sudoku-horiz-border {
-    border-bottom: 2px solid #494949;
+    border-bottom: 2px solid var(--sudoku-inside-border-color);
 
     @media screen and (max-width: 600px) {
-        border-bottom: 1px solid #494949;
+        border-bottom-witdh: 1px;
     }
 }
 
@@ -310,7 +357,7 @@ body {
 }
 
 .control-btn:hover {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
@@ -351,7 +398,7 @@ dialog::backdrop {
 }
 
 .dialog-close-button:hover {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
@@ -365,7 +412,7 @@ dialog::backdrop {
 }
 
 .dialog-button:hover {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
@@ -419,12 +466,12 @@ dialog::backdrop {
 }
 
 .toggle-option:hover {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
 .toggle-option-selected {
-    background: #E4E4E4;
+    background: var(--button-highlight-color);
     border-radius: 5px;
 }
 
