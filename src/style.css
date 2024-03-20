@@ -3,6 +3,7 @@
     --main-font-color: black;
     --sudoku-main-border-color: black;
     --sudoku-inside-border-color: #494949;
+    --sudoku-minor-border-color: #494949;
     --sudoku-cell-frozen-color: #E4E4E4;
     --sudoku-cell-cursor-color: #ADD8E6;
     --sudoku-cell-cursor-on-frozen-color: #7DB5C8;
@@ -14,7 +15,8 @@
     --main-bg-color: #282828;
     --main-font-color: #EDEDED;
     --sudoku-main-border-color: #EDEDED;
-    --sudoku-inside-border-color: #A7A7A7;
+    --sudoku-inside-border-color: #B7B7B7;
+    --sudoku-minor-border-color: #777777;
     --sudoku-cell-frozen-color: #3B3B3B;
     --sudoku-cell-cursor-color: #166984;
     --sudoku-cell-cursor-on-frozen-color: #4D92A9;
@@ -228,7 +230,7 @@ body {
 
     border-width: 1px;
     border-style: solid;
-    border-color: var(--sudoku-inside-border-color);
+    border-color: var(--sudoku-minor-border-color);
     border-collapse: collapse;
 
     position: relative;

@@ -258,48 +258,60 @@ class Cursor {
         this.richSudoku.save()
     }
 
-    moveRight(): void {
-        const [row, col] = this.pos
-        if (col + 1 < this.sudoku.cols) {
-            const oldPos = this.pos
-            this.pos = [row, col + 1]
-            new CursorMoveEvent(oldPos, this.pos).emit()
+    moveByVec(dx: number, dy: number): void {
+        if (dx != 0 && dy != 0) {
+            throw new Error(
+                `only vertical and horizontal vectors supported, got: (${dx}, ${dy})`
+            )
         }
+
+        const [row, col] = this.pos
+        if (
+            (dx < 0 && col + dx < 0)
+            || (dx > 0 && col + dx >= this.sudoku.cols)
+            || (dy < 0 && row + dy < 0)
+            || (dy > 0 && row + dy >= this.sudoku.rows)
+        ){
+            return
+        }
+
+        const oldPos = this.pos
+        this.pos = [row+dy, col+dx]
+        new CursorMoveEvent(oldPos, this.pos).emit()
         this.active = true
         this.richSudoku.save()
+    }
+
+    moveRight(): void {
+        this.moveByVec(1, 0)
+    }
+
+    moveSquareRight(): void {
+        this.moveByVec(this.sudoku.n, 0)
     }
 
     moveLeft(): void {
-        const [row, col] = this.pos
-        if (col > 0) {
-            const oldPos = this.pos
-            this.pos = [row, col - 1]
-            new CursorMoveEvent(oldPos, this.pos).emit()
-        }
-        this.active = true
-        this.richSudoku.save()
+        this.moveByVec(-1, 0)
+    }
+
+    moveSquareLeft(): void {
+        this.moveByVec(-this.sudoku.n, 0)
     }
 
     moveUp() {
-        const [row, col] = this.pos
-        if (row > 0) {
-            const oldPos = this.pos
-            this.pos = [row - 1, col]
-            new CursorMoveEvent(oldPos, this.pos).emit()
-        }
-        this.active = true
-        this.richSudoku.save()
+        this.moveByVec(0, -1)
+    }
+
+    moveSquareUp(): void {
+        this.moveByVec(0, -this.sudoku.n)
     }
 
     moveDown(): void {
-        const [row, col] = this.pos
-        if (row + 1 < this.sudoku.rows) {
-            const oldPos = this.pos
-            this.pos = [row + 1, col]
-            new CursorMoveEvent(oldPos, this.pos).emit()
-        }
-        this.active = true
-        this.richSudoku.save()
+        this.moveByVec(0, 1)
+    }
+
+    moveSquareDown(): void {
+        this.moveByVec(0, this.sudoku.n)
     }
 }
 

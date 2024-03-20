@@ -226,6 +226,7 @@ function handleDigitInput(value: number) {
 
 document.onkeydown = (e: KeyboardEvent) => {
     switch (e.key) {
+        case "x":
         case "Backspace":
         case "Delete":
             if (!richSudoku.previouslyDone) {
@@ -237,17 +238,43 @@ document.onkeydown = (e: KeyboardEvent) => {
         case "7": case "8": case "9":
             handleDigitInput(parseInt(e.key))
             break
+        case "!": case "@": case "#":
+        case "$": case "%": case "^":
+        case "&": case "*": case "(":
+            const digit = {
+                "!": 1, "@": 2, "#": 3,
+                "$": 4, "%": 5, "^": 6,
+                "&": 7, "*": 8, "(": 9,
+            }[e.key]
+            richSudoku.toggleHint(digit)
+            break
+        case "h":
         case "ArrowLeft":
             richSudoku.cursor.moveLeft()
             break
+        case "l":
         case "ArrowRight":
             richSudoku.cursor.moveRight()
             break
+        case "k":
         case "ArrowUp":
             richSudoku.cursor.moveUp()
             break
+        case "j":
         case "ArrowDown":
             richSudoku.cursor.moveDown()
+            break
+        case "H":
+            richSudoku.cursor.moveSquareLeft()
+            break
+        case "L":
+            richSudoku.cursor.moveSquareRight()
+            break
+        case "K":
+            richSudoku.cursor.moveSquareUp()
+            break
+        case "J":
+            richSudoku.cursor.moveSquareDown()
             break
         case "m":
             toggleInputMode()
