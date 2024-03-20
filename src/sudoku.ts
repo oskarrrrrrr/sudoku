@@ -139,6 +139,37 @@ class Sudoku {
         }
         return cleared
     }
+
+    getPosInRow(row: number): [number, number][] {
+        let positions: [number, number][] = []
+        for (let col = 0; col < this.cols; col++) {
+            positions.push([row, col])
+        }
+        return positions
+    }
+
+    getPosInCol(col: number): [number, number][] {
+        let positions: [number, number][] = []
+        for (let row = 0; row < this.rows; row++) {
+            positions.push([row, col])
+        }
+        return positions
+    }
+
+    getPosInSquare(squareNum: number): [number, number][] {
+        let positions: [number, number][] = []
+        const [startRow, startCol] = [
+            this.n * Math.floor(squareNum / this.n),
+            this.n * (squareNum % this.n)
+        ]
+        for (let row = startRow; row < startRow+this.n; row++) {
+            for (let col = startCol; col < startCol+this.n; col++) {
+                positions.push([row, col])
+            }
+        }
+        return positions
+    }
+
 }
 
 function shuffleArray<T>(array: T[]): void {

@@ -4,9 +4,8 @@
     --sudoku-main-border-color: black;
     --sudoku-inside-border-color: #494949;
     --sudoku-minor-border-color: #494949;
-    --sudoku-cell-frozen-color: #E4E4E4;
-    --sudoku-cell-cursor-color: #ADD8E6;
-    --sudoku-cell-cursor-on-frozen-color: #7DB5C8;
+    --sudoku-cell-cursor-color: #FFF900;
+    --sudoku-cell-frozen-color: #E4E4E4;;;
     --sudoku-conflict-circle-color: #D22020;
     --button-highlight-color: #E4E4E4;
 }
@@ -17,9 +16,8 @@
     --sudoku-main-border-color: #EDEDED;
     --sudoku-inside-border-color: #B7B7B7;
     --sudoku-minor-border-color: #777777;
+    --sudoku-cell-cursor-color: #C7C200;
     --sudoku-cell-frozen-color: #3B3B3B;
-    --sudoku-cell-cursor-color: #166984;
-    --sudoku-cell-cursor-on-frozen-color: #4D92A9;
     --sudoku-conflict-circle-color: #9c2323;
     --button-highlight-color: #646464;
 }
@@ -98,16 +96,17 @@ body {
     margin-bottom: 5px;
     padding: 8px;
 
-    font-size: 1.1em;
+    font-size: 1.3em;
     @media screen and (max-width: 500px) {
-        font-size: 1em;
+        font-size: 1.2em;
     }
     @media screen and (max-width: 400px) {
-        font-size: .9em;
+        font-size: 1em;
     }
     @media screen and (max-width: 350px) {
-        font-size: .8em;
+        font-size: .9em;
     }
+
 }
 
 .top-bar-button:hover {
@@ -253,12 +252,32 @@ body {
     background: var(--sudoku-cell-cursor-color);
 }
 
+.sudoku-cell-highlight {
+    background: color-mix(
+        in srgb,
+        var(--sudoku-cell-cursor-color) 10%,
+        var(--main-bg-color)
+    );
+}
+
+.sudoku-cell-highlight.sudoku-cell-frozen {
+    background: color-mix(
+        in srgb,
+        var(--sudoku-cell-cursor-color) 10%,
+        var(--sudoku-cell-frozen-color)
+    );
+}
+
 .sudoku-cell-frozen {
     background: var(--sudoku-cell-frozen-color);
 }
 
 .sudoku-cell-cursor.sudoku-cell-frozen {
-    background: var(--sudoku-cell-cursor-on-frozen-color);
+    background-color: color-mix(
+        in srgb,
+        var(--sudoku-cell-cursor-color) 60%,
+        var(--sudoku-cell-frozen-color)
+    );
 }
 
 .sudoku-vert-border {
@@ -445,7 +464,7 @@ dialog::backdrop {
 #settings-dialog {
     max-width: 600px;
     width: 80vw;
-    height: 150px;
+    height: 200px;
 }
 
 .toggle-setting {

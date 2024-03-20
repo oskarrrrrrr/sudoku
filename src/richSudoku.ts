@@ -118,6 +118,24 @@ class ConflictMarkEvent {
     }
 }
 
+class SudokuHighlightEvent {
+    // list of positions and new state
+    // true - to be highlighted, false - higlighting to be removed
+    changes: [Pos, boolean][]
+
+    constructor(changes: [Pos, boolean][]) {
+        this.changes = changes
+    }
+
+    emit(): void {
+        emitSudokuEvent("SudokuHighlightEvent", this)
+    }
+
+    static listen(cb: (event: SudokuHighlightEvent) => void): void {
+        listenToSudokuEvent("SudokuHighlightEvent", cb)
+    }
+}
+
 type SudokuEventName =
     "CursorMoveEvent"
     | "ValueSetEvent"
@@ -126,6 +144,7 @@ type SudokuEventName =
     | "SudokuSolvedEvent"
     | "SudokuGameLoadEvent"
     | "ConflictMarkEvent"
+    | "SudokuHighlightEvent"
 
 
 type SudokuEvent =
@@ -136,6 +155,7 @@ type SudokuEvent =
     | SudokuSolvedEvent
     | SudokuGameLoadEvent
     | ConflictMarkEvent
+    | SudokuHighlightEvent
 
 
 function emitSudokuEvent<SudokuEventT extends SudokuEvent>(
@@ -160,6 +180,12 @@ function listenToSudokuEvent<SudokuEventT extends SudokuEvent>(
         },
     )
 }
+
+function getSquareNumber(pos: Pos, n: number): number {
+    const [row, col] = pos;
+    return n * Math.floor(row / n) + Math.floor(col / n)
+}
+
 
 class Hints {
     sudoku: Sudoku
@@ -236,7 +262,7 @@ class Cursor {
 
     activate(): void {
         if (!this.active) {
-            new CursorMoveEvent(null, this.pos)
+            new CursorMoveEvent(null, this.pos).emit()
             this.active = true
         }
         this.richSudoku.save()
@@ -312,6 +338,116 @@ class Cursor {
 
     moveSquareDown(): void {
         this.moveByVec(0, this.sudoku.n)
+    }
+}
+
+class RegionHighlighter {
+    sudoku: Sudoku
+    row: number | null
+    col: number | null
+    enabled: boolean
+
+    constructor(sudoku: Sudoku) {
+        this.sudoku = sudoku
+        this.row = null
+        this.col = null
+        this.enabled = true
+        CursorMoveEvent.listen((e: CursorMoveEvent) => {
+            if (this.enabled) {
+                this.update(e.to_pos)
+            }
+        })
+    }
+
+    get square(): number | null {
+        if (this.row == null || this.col == null) {
+            return null
+        }
+        return getSquareNumber([this.row, this.col], this.sudoku.n)
+    }
+
+    enable(pos: [number, number]): void {
+        this.enabled = true
+        this.update(pos)
+    }
+
+    disable(): void {
+        this.enabled = false
+        this.update(null)
+    }
+
+    update(newPos: [number, number] | null): void {
+        type Pos = [number, number]
+
+        function posEq(p1: Pos, p2: Pos): boolean {
+            return p1[0] == p2[0] && p1[1] == p2[1]
+        }
+
+        function arrIncludes(arr: Pos[], pos: Pos): boolean {
+            for (let i = 0; i < arr.length; i++) {
+                if (posEq(pos, arr[i])) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        function arrAdder(arr: [number, number][]): (pos: [number, number]) => void {
+            return (pos: [number, number]): void => {
+                if (!arrIncludes(arr, pos)) {
+                    arr.push(pos)
+                }
+            }
+        }
+
+        let toRemove: [number, number][] = []
+        const addToRemove = arrAdder(toRemove)
+        if (this.row != null && this.col != null) {
+            this.sudoku.getPosInRow(this.row).forEach(addToRemove)
+            this.sudoku.getPosInCol(this.col).forEach(addToRemove)
+            const square = this.square
+            if (square == null) {
+                throw new Error("Expected square to be not null")
+            }
+            this.sudoku.getPosInSquare(square).forEach(addToRemove)
+        }
+
+        let toAdd: [number, number][] = []
+        const addToAdd = arrAdder(toAdd)
+        if (newPos != null) {
+            const [row, col] = newPos
+            this.sudoku.getPosInRow(row).forEach(addToAdd)
+            this.sudoku.getPosInCol(col).forEach(addToAdd)
+            const square = getSquareNumber([row, col], this.sudoku.n)
+            this.sudoku.getPosInSquare(square).forEach(addToAdd)
+        }
+
+        let changes: [[number, number], boolean][] = []
+        for (const rem of toRemove) {
+            if (!arrIncludes(toAdd, rem)) {
+                changes.push([rem, false])
+            }
+        }
+        if (newPos != null) {
+            changes.push([newPos, false])
+        }
+        for (const new_ of toAdd) {
+            if (
+                !arrIncludes(toRemove, new_)
+                || (
+                    this.row != null && this.col != null
+                    && posEq(new_, [this.row, this.col])
+                )
+            ) {
+                if (newPos == null || !posEq(newPos, new_)) {
+                    changes.push([new_, true])
+                }
+            }
+        }
+        new SudokuHighlightEvent(changes).emit();
+
+        [this.row, this.col] = newPos != null ? newPos : [null, null]
+        console.log(changes)
     }
 }
 
@@ -440,7 +576,7 @@ class ConflictsTracker {
 
     at(pos: Pos): boolean {
         const [row, col] = pos
-        const boxNum = this.posToBoxNum(pos)
+        const boxNum = getSquareNumber(pos, this.sudoku.n)
         const val = this.sudoku.at(pos)
         return (
             this.rowCounters[row][val] > 1
@@ -456,12 +592,6 @@ class ConflictsTracker {
             arr.push(subArr)
         }
         return arr
-    }
-
-    posToBoxNum(pos: Pos): number {
-        const [row, col] = pos;
-        const n = this.sudoku.n
-        return n * Math.floor(row / n) + Math.floor(col / n)
     }
 
     findValuesInRow(row: number, value: number): Pos[] {
@@ -508,7 +638,7 @@ class ConflictsTracker {
         }
 
         const [row, col] = pos
-        const boxNum = this.posToBoxNum(pos)
+        const boxNum = getSquareNumber(pos, this.sudoku.n)
 
         let changes: [Pos, boolean][] = []
         function addChanges(positions: Pos[], conflict: boolean): void {
@@ -564,6 +694,7 @@ class RichSudoku {
     difficulty: string
     conflicts: ConflictsTracker
     previouslyDone: boolean
+    regionHighlighter: RegionHighlighter
 
     reloading: number
 
@@ -575,6 +706,7 @@ class RichSudoku {
         this.timer = new Timer()
         this.difficulty = ""
         this.conflicts = new ConflictsTracker(this.sudoku)
+        this.regionHighlighter = new RegionHighlighter(this.sudoku)
         this.previouslyDone = false
         this.reloading = 0
     }
@@ -763,4 +895,5 @@ export {
     SudokuSolvedEvent,
     SudokuGameLoadEvent,
     ConflictMarkEvent,
+    SudokuHighlightEvent,
 }
