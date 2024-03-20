@@ -186,6 +186,9 @@ function getSquareNumber(pos: Pos, n: number): number {
     return n * Math.floor(row / n) + Math.floor(col / n)
 }
 
+function posEq(p1: Pos, p2: Pos): boolean {
+    return p1[0] == p2[0] && p1[1] == p2[1]
+}
 
 class Hints {
     sudoku: Sudoku
@@ -346,12 +349,14 @@ class RegionHighlighter {
     row: number | null
     col: number | null
     enabled: boolean
+    highlightSquares: boolean
 
     constructor(sudoku: Sudoku) {
         this.sudoku = sudoku
         this.row = null
         this.col = null
         this.enabled = true
+        this.highlightSquares = false
         CursorMoveEvent.listen((e: CursorMoveEvent) => {
             if (this.enabled) {
                 this.update(e.to_pos)
@@ -379,10 +384,6 @@ class RegionHighlighter {
     update(newPos: [number, number] | null): void {
         type Pos = [number, number]
 
-        function posEq(p1: Pos, p2: Pos): boolean {
-            return p1[0] == p2[0] && p1[1] == p2[1]
-        }
-
         function arrIncludes(arr: Pos[], pos: Pos): boolean {
             for (let i = 0; i < arr.length; i++) {
                 if (posEq(pos, arr[i])) {
@@ -405,11 +406,13 @@ class RegionHighlighter {
         if (this.row != null && this.col != null) {
             this.sudoku.getPosInRow(this.row).forEach(addToRemove)
             this.sudoku.getPosInCol(this.col).forEach(addToRemove)
-            const square = this.square
-            if (square == null) {
-                throw new Error("Expected square to be not null")
+            if (this.highlightSquares) {
+                const square = this.square
+                if (square == null) {
+                    throw new Error("Expected square to be not null")
+                }
+                this.sudoku.getPosInSquare(square).forEach(addToRemove)
             }
-            this.sudoku.getPosInSquare(square).forEach(addToRemove)
         }
 
         let toAdd: [number, number][] = []
@@ -418,8 +421,10 @@ class RegionHighlighter {
             const [row, col] = newPos
             this.sudoku.getPosInRow(row).forEach(addToAdd)
             this.sudoku.getPosInCol(col).forEach(addToAdd)
-            const square = getSquareNumber([row, col], this.sudoku.n)
-            this.sudoku.getPosInSquare(square).forEach(addToAdd)
+            if (this.highlightSquares) {
+                const square = getSquareNumber([row, col], this.sudoku.n)
+                this.sudoku.getPosInSquare(square).forEach(addToAdd)
+            }
         }
 
         let changes: [[number, number], boolean][] = []
@@ -447,7 +452,101 @@ class RegionHighlighter {
         new SudokuHighlightEvent(changes).emit();
 
         [this.row, this.col] = newPos != null ? newPos : [null, null]
-        console.log(changes)
+    }
+}
+
+class NumberHighlighter {
+    sudoku: Sudoku
+    curr: number | null
+    cells: [number, number][]
+    enabled: boolean
+
+    constructor(sudoku: Sudoku) {
+        this.sudoku = sudoku
+        this.curr = null
+        this.cells = []
+        this.enabled = false
+        CursorMoveEvent.listen((e: CursorMoveEvent) => {
+            if (this.enabled && e.to_pos != null) {
+                this.update(e.to_pos)
+            }
+        })
+        ValueSetEvent.listen((e: ValueSetEvent) => {
+            if (this.enabled) {
+                this.update(e.pos)
+            }
+        })
+    }
+
+    private findNumberCells(num: number): [number, number][] {
+        let positions: [number, number][] = []
+        for (let row = 0; row < this.sudoku.rows; row++) {
+            for (let col = 0; col < this.sudoku.cols; col++) {
+                const pos: [number, number] = [row, col]
+                if (this.sudoku.at(pos) == num) {
+                    positions.push(pos)
+                }
+            }
+        }
+        return positions
+    }
+
+    enable(pos: [number, number]) {
+        this.enabled = true
+        this.update(pos)
+    }
+
+    disable() {
+        this.enabled = false
+        this.update(null)
+    }
+
+    update(cursorPos: [number, number] | null) {
+        let newNum = null
+        if (cursorPos != null) {
+            const v = this.sudoku.at(cursorPos)
+            newNum = v == 0 ? null : v
+        }
+
+        let changes: [[number, number], boolean][] = []
+
+        if (this.curr != null && newNum != null && this.curr == newNum) {
+            for (let pos of this.cells) {
+                if (!posEq(pos, cursorPos!)) {
+                    changes.push([pos, true])
+                }
+            }
+            changes.push([cursorPos!, false])
+            new SudokuHighlightEvent(changes).emit()
+            return
+        }
+
+        if (this.curr != null) {
+            for (let pos of this.cells) {
+                changes.push([pos, false])
+            }
+        }
+
+        let newCells = null
+        if (newNum != null) {
+            newCells = this.findNumberCells(newNum)
+            for (let pos of newCells) {
+                if (!posEq(pos, cursorPos!)) {
+                    changes.push([pos, true])
+                }
+            }
+        }
+
+        new SudokuHighlightEvent(changes).emit()
+
+        if (newNum == null) {
+            this.curr = null
+            this.cells = []
+        } else {
+            this.curr = newNum
+            console.assert(newCells != null, "newCells should be not null")
+            this.cells = newCells!
+        }
     }
 }
 
@@ -695,6 +794,7 @@ class RichSudoku {
     conflicts: ConflictsTracker
     previouslyDone: boolean
     regionHighlighter: RegionHighlighter
+    numberHighlighter: NumberHighlighter
 
     reloading: number
 
@@ -707,6 +807,7 @@ class RichSudoku {
         this.difficulty = ""
         this.conflicts = new ConflictsTracker(this.sudoku)
         this.regionHighlighter = new RegionHighlighter(this.sudoku)
+        this.numberHighlighter = new NumberHighlighter(this.sudoku)
         this.previouslyDone = false
         this.reloading = 0
     }
