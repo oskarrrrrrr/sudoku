@@ -18,7 +18,7 @@ jobs:
           node-version-file: ui/.nvmrc
           cache: npm
           cache-dependency-path: ui/package-lock.json
-      - run: npm ci
+      - run: ( cd ui; npm ci )
       - run: npm run gulp build
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
