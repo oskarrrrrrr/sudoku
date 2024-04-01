@@ -1,8 +1,5 @@
 const { watch, src, dest, series, parallel } = require("gulp")
 const cp = require("child_process")
-const ts = require("gulp-typescript")
-
-const tsProject = ts.createProject("ui/tsconfig.json")
 
 function dirs() {
     return src('*.*', { read: false })
@@ -25,9 +22,7 @@ function css(cb) {
 }
 
 function tsc(cb) {
-    return tsProject.src()
-        .pipe(tsProject())
-        .js.pipe(dest("site/static"));
+    return cp.exec("npm run tsc -- -p ui/tsconfig.json")
 }
 
 function build_server(cb) {

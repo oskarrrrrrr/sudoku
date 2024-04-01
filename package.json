@@ -8,8 +8,7 @@
     "gulp": "gulp"
   },
   "devDependencies": {
-    "gulp": "^4.0.2",
-    "gulp-typescript": "^6.0.0-alpha.1",
+    "gulp": "^5.0.0",
     "typescript": "^5.3.2"
   }
 }
