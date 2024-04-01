@@ -2,7 +2,7 @@ const { watch, src, dest, series, parallel } = require("gulp")
 const cp = require("child_process")
 const ts = require("gulp-typescript")
 
-const tsProject = ts.createProject("tsconfig.json")
+const tsProject = ts.createProject("ui/tsconfig.json")
 
 function dirs() {
     return src('*.*', { read: false })
@@ -12,7 +12,7 @@ function dirs() {
 }
 
 function build(cb) {
-    return cp.exec("go build -o scripts/build src/build.go", cb)
+    return cp.exec("go build -o scripts/build cmd/build/build.go", cb)
 }
 
 function html(cb) {
@@ -20,7 +20,7 @@ function html(cb) {
 }
 
 function css(cb) {
-    return src("src/*.css")
+    return src("ui/src/*.css")
         .pipe(dest("site/static"))
 }
 
@@ -30,16 +30,12 @@ function tsc(cb) {
         .js.pipe(dest("site/static"));
 }
 
-function build_api(cb) {
-    return cp.exec("go build -C ./src/api -o ../../site/api")
+function build_server(cb) {
+    return cp.exec("go build -o ./site/api cmd/serve.go")
 }
 
 function sudokus(cb) {
-    return src("./src/api/sudokus.txt").pipe(dest("site"))
-}
-
-function assets(cb) {
-    return src("assets/*.*").pipe(dest("site/static/assets"))
+    return src("./sudokus.txt").pipe(dest("site"))
 }
 
 function clean(cb) {
@@ -48,12 +44,12 @@ function clean(cb) {
 
 exports.watch = function() {
     watch("src/build.go", series(build, html))
-    watch("src/*.html", html)
-    watch("src/*.css", css)
-    watch("src/*.ts", tsc)
-    watch("src/api/**/*.go", build_api)
-    watch("src/api/sudokus.txt", sudokus)
-    watch("assets/*.*", assets)
+    watch("ui/src/*.html", html)
+    watch("ui/src/*.css", css)
+    watch("ui/src/*.ts", tsc)
+    watch("cmd/**/*.go", build_server)
+    watch("internal/**/*.go", build_server)
+    watch("sudokus.txt", sudokus)
 }
 
 exports.clean = clean
@@ -65,8 +61,7 @@ exports.build = series(
         series(build, html),
         css,
         tsc,
-        build_api,
+        build_server,
         sudokus,
-        assets,
     )
 )

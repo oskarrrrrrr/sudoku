@@ -67,7 +67,7 @@ func generateTemplateInput(n int) TemplateInput {
 }
 
 func main() {
-	templateString := readTemplateString("src/index.html")
+	templateString := readTemplateString("ui/src/index/index.html")
 	input := generateTemplateInput(3)
 	temp, err := template.New("index").Parse(templateString)
 	check(err)

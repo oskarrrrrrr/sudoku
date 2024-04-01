@@ -1,16 +1,11 @@
-package main
+package sudoku
 
 import (
-	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 )
-
-func methodNotAllowed(w http.ResponseWriter) {
-	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-}
 
 type Sudoku struct {
 	hints int
@@ -25,15 +20,15 @@ const (
 	hard
 )
 
-type ParseError struct {
+type parseError struct {
 	msg string
 }
 
-func (err ParseError) Error() string {
+func (err parseError) Error() string {
 	return err.msg
 }
 
-func validateDifficulty(value string, default_ difficulty) (difficulty, *ParseError) {
+func validateDifficulty(value string, default_ difficulty) (difficulty, *parseError) {
 	switch value {
 	case "":
 		return default_, nil
@@ -46,7 +41,7 @@ func validateDifficulty(value string, default_ difficulty) (difficulty, *ParseEr
 	default:
 		msg := "Invalid difficulty. Expected one of: 'easy', 'medium', 'hard'. " +
 			"Got: '" + value + "'"
-		return easy, &ParseError{msg: msg}
+		return easy, &parseError{msg: msg}
 	}
 }
 
@@ -79,22 +74,7 @@ func getSudokuWithDifficulty(sudokus map[int][]Sudoku, difficulty difficulty) Su
 	return arr[rand.Intn(len(arr))]
 }
 
-func randomSudoku(sudokus map[int][]Sudoku, w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		methodNotAllowed(w)
-		return
-	}
-	rawDiff := r.URL.Query().Get("difficulty")
-	diff, err := validateDifficulty(rawDiff, difficulty(rand.Intn(3)))
-	if err != nil {
-		http.Error(w, err.msg, http.StatusUnprocessableEntity)
-	}
-	sudoku := getSudokuWithDifficulty(sudokus, diff)
-	body := difficultyToString(diff) + "\n" + sudoku.value
-	w.Write([]byte(body))
-}
-
-func readSudokus() map[int][]Sudoku {
+func ReadSudokus() map[int][]Sudoku {
 	sudokusText, err := os.ReadFile("sudokus.txt")
 	if err != nil {
 		panic(err)
@@ -116,14 +96,13 @@ func readSudokus() map[int][]Sudoku {
 	return sudokus
 }
 
-func main() {
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-
-	sudokus := readSudokus()
-	http.HandleFunc("/api/random-sudoku", func(w http.ResponseWriter, r *http.Request) { randomSudoku(sudokus, w, r) })
-
-	fmt.Println("Server starting on port 9100...")
-	if err := http.ListenAndServe(":9100", nil); err != nil {
-		fmt.Println(err)
+func RandomSudoku(sudokus map[int][]Sudoku, w http.ResponseWriter, r *http.Request) {
+	rawDiff := r.URL.Query().Get("difficulty")
+	diff, err := validateDifficulty(rawDiff, difficulty(rand.Intn(3)))
+	if err != nil {
+		http.Error(w, err.msg, http.StatusUnprocessableEntity)
 	}
+	sudoku := getSudokuWithDifficulty(sudokus, diff)
+	body := difficultyToString(diff) + "\n" + sudoku.value
+	w.Write([]byte(body))
 }
