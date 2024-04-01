@@ -15,9 +15,9 @@ jobs:
       - name: setup nodejs
         uses: actions/setup-node@v4.0.0
         with:
-          node-version-file: ui/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run gulp build
       - name: Install SSH key
