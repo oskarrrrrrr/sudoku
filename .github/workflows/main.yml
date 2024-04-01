@@ -15,9 +15,9 @@ jobs:
       - name: setup nodejs
         uses: actions/setup-node@v4.0.0
         with:
-          node-version-file: .nvmrc
+          node-version-file: ui/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: ui/package-lock.json
       - run: npm ci
       - run: npm run gulp build
       - name: Install SSH key
@@ -25,6 +25,6 @@ jobs:
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
-      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -C ./src/api -o ../../site/api
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o site/api ./cmd/serve.go
       - run: rsync -a --delete site/ root@oskarrrrrrr.xyz:/var/www/sudoku
       - run: ssh root@oskarrrrrrr.xyz -t "systemctl restart sudoku-api"
