@@ -6,6 +6,7 @@ function dirs() {
         .pipe(dest('./site'))
         .pipe(dest('./site/static'))
         .pipe(dest('./site/static/assets'))
+        .pipe(dest('./site/migrations'))
 }
 
 function build(cb) {
@@ -33,6 +34,10 @@ function sudokus(cb) {
     return src("./sudokus.txt").pipe(dest("site"))
 }
 
+function migrations(cb) {
+    return src("./migrations/*.sql").pipe(dest("./site/migrations"))
+}
+
 function clean(cb) {
     return cp.exec("rm -rf site/* scripts/*", cb)
 }
@@ -44,6 +49,7 @@ exports.watch = function() {
     watch("ui/src/*.ts", tsc)
     watch("cmd/**/*.go", build_server)
     watch("internal/**/*.go", build_server)
+    watch("migrations/*.sql", migrations)
     watch("sudokus.txt", sudokus)
 }
 
@@ -57,6 +63,7 @@ exports.build = series(
         css,
         tsc,
         build_server,
+        migrations,
         sudokus,
     )
 )

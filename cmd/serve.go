@@ -1,13 +1,29 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/oskarrrrrrr/sudoku-web/internal/api"
+	"github.com/oskarrrrrrr/sudoku-web/internal/migrations"
 	"github.com/oskarrrrrrr/sudoku-web/internal/sudoku"
 )
 
 func main() {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	defer conn.Close(context.Background())
+
+	migs := migrations.ListMigrations("migrations")
+	migrations.RunAll(conn, ctx, migs)
+
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 
 	sudokus := sudoku.ReadSudokus()
@@ -15,6 +31,13 @@ func main() {
 		"GET /api/random-sudoku",
 		func(w http.ResponseWriter, r *http.Request) {
 			sudoku.RandomSudoku(sudokus, w, r)
+		},
+	)
+
+	http.HandleFunc(
+		"POST /api/login",
+		func(w http.ResponseWriter, r *http.Request) {
+			api.Login(conn, ctx, w, r)
 		},
 	)
 
