@@ -41,6 +41,13 @@ func main() {
 		},
 	)
 
+	http.HandleFunc(
+		"POST /api/users",
+		func(w http.ResponseWriter, r *http.Request) {
+			api.CreateUser(conn, ctx, w, r)
+		},
+	)
+
 	log.Println("Server starting on port 9100...")
 	if err := http.ListenAndServe(":9100", nil); err != nil {
 		fmt.Println(err)
