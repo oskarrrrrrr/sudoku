@@ -1,3 +1,3 @@
 # Mock
 
-Mock data for local testing. All passwords set to "abc".
+Mock data for local testing. All passwords set to "qwerty123".

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -31,6 +33,15 @@ func checkPassword(hash, pass string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass)) == nil
 }
 
+func validateEmail(email string) (bool, error) {
+    emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(email))
+    if err != nil {
+        log.Printf("ERR: Failed email validation: '%s'\n", email)
+        return false, err
+    }
+    return emailOk, nil
+}
+
 type loginCredentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -42,10 +53,24 @@ func Login(
 ) {
 	var creds loginCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil || creds.Email == "" || creds.Password == "" {
+	if err != nil {
 		parseErr(w)
 		return
 	}
+
+    emailOk, err := validateEmail(creds.Email)
+    if err != nil {
+        internalErr(w)
+        return
+    }
+    if !emailOk {
+        http.Error(w, "Invalid email format.", http.StatusBadRequest)
+        return
+    }
+    if len(creds.Password) < PASSWORD_MIN_LEN {
+        http.Error(w, "Password too short.", http.StatusBadRequest)
+        return
+    }
 
 	var password string
 	err = conn.QueryRow(
@@ -74,6 +99,8 @@ func Login(
 	}
 }
 
+const PASSWORD_MIN_LEN = 8
+
 type createUserCredentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -85,9 +112,23 @@ func CreateUser(
 ) {
 	var creds createUserCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil || creds.Email == "" || creds.Password == "" {
+    if err != nil {
 		parseErr(w)
 		return
+    }
+
+    emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(creds.Email))
+    if err != nil {
+        internalErr(w)
+        return
+    }
+    if !emailOk {
+        http.Error(w, "Invalid email format.", http.StatusBadRequest)
+        return
+    }
+    if len(creds.Password) < PASSWORD_MIN_LEN {
+        http.Error(w, "Password too short.", http.StatusBadRequest)
+        return
 	}
 
 	pass, err := hashPassword(creds.Password)
