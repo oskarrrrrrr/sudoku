@@ -13,8 +13,13 @@ function build(cb) {
     return cp.exec("go build -o scripts/build cmd/build/build.go", cb)
 }
 
-function html(cb) {
+function html_build(cb) {
     return cp.exec("./scripts/build", cb)
+}
+
+function html(cb) {
+    return src("ui/src/*.html")
+        .pipe(dest("site/static"))
 }
 
 function css(cb) {
@@ -43,10 +48,11 @@ function clean(cb) {
 }
 
 exports.watch = function() {
-    watch("src/build.go", series(build, html))
-    watch("ui/src/*.html", html)
+    watch("src/build.go", series(build, html_build))
+    watch("ui/src/index.html", html_build)
+    watch("ui/src/*.html", series(html, html_build))
     watch("ui/src/*.css", css)
-    watch("ui/src/*.ts", tsc)
+    watch("ui/src/**/*.ts", tsc)
     watch("cmd/**/*.go", build_server)
     watch("internal/**/*.go", build_server)
     watch("migrations/*.sql", migrations)
@@ -59,7 +65,7 @@ exports.build = series(
     clean,
     dirs,
     parallel(
-        series(build, html),
+        series(build, html, html_build),
         css,
         tsc,
         build_server,

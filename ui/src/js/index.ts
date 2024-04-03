@@ -1,3 +1,10 @@
+import {
+    Highlight,
+    Theme,
+    themeSetting,
+    highlightSetting,
+    highlightConflictsSetting,
+} from "./settings.js"
 import { Sudoku, shuffleSudoku } from "./sudoku.js"
 import {
     RichSudoku,
@@ -42,87 +49,34 @@ function getImg(id: string): HTMLImageElement {
     return getHtmlElement(id, HTMLImageElement, "image")
 }
 
-// SETTINGS
+// SETTINGS DIALOG
 
 let settingsButton = getButton("settings-button")
 let settingsDialog = getDialog("settings-dialog")
 let settingsDialogCloseButton = getDiv("settings-dialog-close-button")
+
 settingsDialog.onclose = () => {
     resumeTimer()
 }
+
 settingsButton.onclick = () => {
     richSudoku.timer.pause()
     settingsDialog.showModal()
-    refreshHighlightConflictsSettings()
-    refreshHighlightSettings()
-    refreshThemeSettings()
-}
-settingsDialogCloseButton.onclick = () => {
-    settingsDialog.close()
+    refreshHighlightConflictsSettings(highlightConflictsSetting.get())
+    refreshHighlightSettings(highlightSetting.get())
+    refreshThemeSettings(themeSetting.get())
 }
 
-type Theme = "light" | "dark"
+settingsDialogCloseButton.onclick = () => { settingsDialog.close() }
 
-function isTheme(s: string): s is Theme {
-    return s == "light" || s == "dark"
-}
-
-type Highlight = "region" | "numbers" | "none"
-
-function isHighlight(val: string): val is Highlight {
-    return ["region", "numbers", "none"].includes(val)
-}
-
-class SudokuSettings {
-    highlightConflicts: boolean
-    highlight: Highlight
-    theme: Theme
-
-    constructor() {
-        this.highlightConflicts = true
-        this.highlight = "none"
-        this.theme = "light"
-    }
-
-    save(): void {
-        localStorage.setItem("highlightConflicts", this.highlightConflicts.toString())
-        localStorage.setItem("highlight", this.highlight)
-        localStorage.setItem("theme", this.theme)
-    }
-
-    load(): void {
-        const highlightConflicts = localStorage.getItem("highlightConflicts")
-        if (highlightConflicts != null) {
-            this.highlightConflicts = (highlightConflicts == "true")
-        }
-        const highlight = localStorage.getItem("highlight")
-        if (highlight == null) {
-            this.highlight = "none"
-        } else {
-            if (!isHighlight(highlight)) {
-                throw new Error(`Highlight has an unexpected value ${highlight}`)
-            }
-            this.highlight = highlight
-        }
-        const theme = localStorage.getItem("theme")
-        if (theme != null) {
-            if (!isTheme(theme)) {
-                throw new Error(`unexpected theme value in local storage: ${theme}`)
-            }
-            this.theme = theme
-        }
-    }
-}
-
-let sudokuSettings = new SudokuSettings()
-sudokuSettings.load()
+// HIGHLIGHT CONFLICTS SETTINGS
 
 let highlightConflictsYes = getDiv("highlight-conflicts-yes")
 let highlightConflictsNo = getDiv("highlight-conflicts-no")
 
-function refreshHighlightConflictsSettings() {
+function refreshHighlightConflictsSettings(highlightConflicts: boolean) {
     const toggleOptionSelected = "toggle-option-selected"
-    if (sudokuSettings.highlightConflicts) {
+    if (highlightConflicts) {
         highlightConflictsYes.classList.add(toggleOptionSelected)
         highlightConflictsNo.classList.remove(toggleOptionSelected)
     } else {
@@ -131,25 +85,23 @@ function refreshHighlightConflictsSettings() {
     }
 }
 
-highlightConflictsYes.onclick = () => {
-    sudokuSettings.highlightConflicts = true
-    sudokuSettings.save()
-    refreshHighlightConflictsSettings()
-    refreshCells()
-}
+highlightConflictsYes.onclick = () => { highlightConflictsSetting.set(true) }
+highlightConflictsNo.onclick = () => { highlightConflictsSetting.set(false) }
 
-highlightConflictsNo.onclick = () => {
-    sudokuSettings.highlightConflicts = false
-    sudokuSettings.save()
-    refreshHighlightConflictsSettings()
-    refreshCells()
-}
+highlightConflictsSetting.extendOnSet(refreshHighlightConflictsSettings)
+highlightConflictsSetting.extendOnSet((_: boolean) => refreshCells())
+
+// HIGHLIGHT SETTINGS
 
 let highlightRegion = getDiv("highlight-region")
 let highlightNumbers = getDiv("highlight-numbers")
 let highlightNone = getDiv("highlight-none")
 
-function refreshHighlightSettings() {
+highlightRegion.onclick = () => { highlightSetting.set("region") }
+highlightNumbers.onclick = () => { highlightSetting.set("numbers") }
+highlightNone.onclick = () => { highlightSetting.set("none") }
+
+function refreshHighlightSettings(highlight: Highlight) {
     const toggleOptionSelected = "toggle-option-selected"
     const options = new Map<Highlight, HTMLDivElement>(
         [
@@ -159,7 +111,7 @@ function refreshHighlightSettings() {
         ]
     )
     for (const [name, div] of options.entries()) {
-        if (name == sudokuSettings.highlight) {
+        if (name == highlight) {
             div.classList.add(toggleOptionSelected)
         } else {
             div.classList.remove(toggleOptionSelected)
@@ -167,9 +119,9 @@ function refreshHighlightSettings() {
     }
 }
 
-function refreshHighlighting(): void {
+function refreshHighlighting(highlight: Highlight): void {
     richSudoku.numberHighlighter.disable()
-    switch (sudokuSettings.highlight) {
+    switch (highlight) {
         case "region":
             richSudoku.numberHighlighter.disable()
             richSudoku.regionHighlighter.enable(richSudoku.cursor.pos)
@@ -185,33 +137,20 @@ function refreshHighlighting(): void {
     }
 }
 
-highlightRegion.onclick = () => {
-    sudokuSettings.highlight = "region"
-    sudokuSettings.save()
-    refreshHighlightSettings()
-    refreshHighlighting()
-}
+highlightSetting.extendOnSet(refreshHighlightSettings)
+highlightSetting.extendOnSet(refreshHighlighting)
 
-highlightNumbers.onclick = () => {
-    sudokuSettings.highlight = "numbers"
-    sudokuSettings.save()
-    refreshHighlightSettings()
-    refreshHighlighting()
-}
-
-highlightNone.onclick = () => {
-    sudokuSettings.highlight = "none"
-    sudokuSettings.save()
-    refreshHighlightSettings()
-    refreshHighlighting()
-}
+// THEME SETTINGS
 
 let themeLight = getDiv("theme-light")
 let themeDark = getDiv("theme-dark")
 
-function refreshThemeSettings() {
+themeLight.onclick = () => { themeSetting.set("light") }
+themeDark.onclick = () => { themeSetting.set("dark") }
+
+function refreshThemeSettings(newTheme: Theme): void {
     const toggleOptionSelected = "toggle-option-selected"
-    if (sudokuSettings.theme == "light") {
+    if (newTheme == "light") {
         themeLight.classList.add(toggleOptionSelected)
         themeDark.classList.remove(toggleOptionSelected)
     } else {
@@ -220,29 +159,8 @@ function refreshThemeSettings() {
     }
 }
 
-function setTheme(theme: Theme): void {
-    document.documentElement.setAttribute("data-theme", theme)
-    const dialogs = document.querySelectorAll('dialog');
-    dialogs.forEach(dialog => {
-        dialog.setAttribute("data-theme", "dark");
-    });
-}
-
-themeLight.onclick = () => {
-    sudokuSettings.theme = "light"
-    sudokuSettings.save()
-    refreshThemeSettings()
-    setTheme("light")
-}
-
-themeDark.onclick = () => {
-    sudokuSettings.theme = "dark"
-    sudokuSettings.save()
-    refreshThemeSettings()
-    setTheme("dark")
-}
-
-setTheme(sudokuSettings.theme)
+themeSetting.extendOnSet(refreshThemeSettings)
+themeSetting.runOnSet()
 
 // INPUT MODE
 
@@ -398,7 +316,7 @@ function setCellValue(pos: [number, number], value: number): void {
     if (value == 0) {
         cell.innerText = ""
     } else {
-        if (sudokuSettings.highlightConflicts && richSudoku.conflicts.at(pos)) {
+        if (highlightConflictsSetting.get() && richSudoku.conflicts.at(pos)) {
             cell.innerHTML = (
                 `${value.toString()}<div class="conflict-circle"></div>`
             )
@@ -487,7 +405,7 @@ SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
 ConflictMarkEvent.listen((e: ConflictMarkEvent) => {
     for (let i = 0; i < e.changes.length; i++) {
         const [pos, _] = e.changes[i]
-        setConflict(pos)
+        setCellValue(pos, richSudoku.sudoku.at(pos))
     }
 })
 
@@ -495,7 +413,7 @@ SudokuHighlightEvent.listen((e: SudokuHighlightEvent) => {
     for (const [pos, highlight] of e.changes) {
         const cell = getSudokuCell(pos)
         if (highlight) {
-            if (sudokuSettings.highlight != "none") {
+            if (highlightSetting.get() != "none") {
                 cell.classList.add("sudoku-cell-highlight")
             }
         } else {
@@ -587,7 +505,6 @@ for (const [btn, diff] of newGameButtons) {
     }
 }
 
-
 let pauseButton = getDiv("pause-button")
 let resumeButton = getDiv("resume-button")
 let pauseDialog = getDialog("pause-dialog")
@@ -649,11 +566,5 @@ function getDifficultyDiv(): HTMLDivElement {
     return getDiv("game-difficulty")
 }
 
-// CONFLICT
-
-function setConflict(pos: [number, number]): void {
-    setCellValue(pos, richSudoku.sudoku.at(pos))
-}
-
 richSudoku.cursor.activate()
-refreshHighlighting()
+highlightSetting.runOnSet()
