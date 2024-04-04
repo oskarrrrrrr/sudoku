@@ -7,14 +7,15 @@ function dirs() {
         .pipe(dest('./site/static'))
         .pipe(dest('./site/static/assets'))
         .pipe(dest('./site/migrations'))
+        .pipe(dest('./bin'))
 }
 
 function build(cb) {
-    return cp.exec("go build -o scripts/build cmd/build/build.go", cb)
+    return cp.exec("go build -o bin/build cmd/build/build.go", cb)
 }
 
 function html_build(cb) {
-    return cp.exec("./scripts/build", cb)
+    return cp.exec("./bin/build", cb)
 }
 
 function html(cb) {
@@ -44,7 +45,7 @@ function migrations(cb) {
 }
 
 function clean(cb) {
-    return cp.exec("rm -rf site/* scripts/*", cb)
+    return cp.exec("rm -rf site/* bin/*", cb)
 }
 
 exports.watch = function() {
