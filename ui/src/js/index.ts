@@ -400,6 +400,7 @@ SudokuSolvedEvent.listen((_: SudokuSolvedEvent) => {
 
 SudokuGameLoadEvent.listen((_: SudokuGameLoadEvent) => {
     getDifficultyDiv().innerText = richSudoku.difficulty
+    refreshHighlighting(highlightSetting.get())
 })
 
 ConflictMarkEvent.listen((e: ConflictMarkEvent) => {

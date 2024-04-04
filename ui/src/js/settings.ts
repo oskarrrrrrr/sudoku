@@ -80,7 +80,6 @@ function setTheme(theme: Theme): void {
     dialogs.forEach(dialog => {
         dialog.setAttribute("data-theme", "dark");
     });
-    console.log("set theme done")
 }
 
 let themeSetting = new Setting<Theme>(
@@ -96,6 +95,11 @@ let themeSetting = new Setting<Theme>(
     setTheme,
 )
 
+addEventListener("visibilitychange", (_) => {
+    if (document.visibilityState == "visible") {
+        themeSetting.runOnSet()
+    }
+});
 
 type Highlight = "region" | "numbers" | "none"
 

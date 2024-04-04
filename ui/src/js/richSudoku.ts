@@ -792,6 +792,7 @@ class RichSudoku {
     timer: Timer
     difficulty: string
     conflicts: ConflictsTracker
+    // has sudoku been solved before? useful when loading from cache
     previouslyDone: boolean
     regionHighlighter: RegionHighlighter
     numberHighlighter: NumberHighlighter
