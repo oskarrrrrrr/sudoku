@@ -512,16 +512,15 @@ let pauseDialog = getDialog("pause-dialog")
 pauseDialog.onclose = () => {
     resumeTimer()
 }
-pauseButton.onclick = () => {
-    if (richSudoku.timer.status() != "running") {
-        return
+
+pauseButton.onclick = () => { pauseGame() }
+resumeButton.onclick = () => { pauseDialog.close() }
+
+addEventListener("visibilitychange", (_) => {
+    if (document.visibilityState == "hidden") {
+        pauseGame()
     }
-    richSudoku.timer.pause()
-    pauseDialog.showModal()
-}
-resumeButton.onclick = () => {
-    pauseDialog.close()
-}
+});
 
 // TIMER
 
@@ -553,6 +552,14 @@ function resumeTimer(): void {
     if (!richSudoku.sudoku.isDone()) {
         richSudoku.timer.resume()
     }
+}
+
+function pauseGame(): void {
+    if (richSudoku.timer.status() != "running") {
+        return
+    }
+    richSudoku.timer.pause()
+    pauseDialog.showModal()
 }
 
 // make sure that timer state is saved regularly
