@@ -1,6 +1,7 @@
 :root {
     --main-bg-color: white;
     --main-font-color: black;
+    --error-font-color: red;
     --sudoku-main-border-color: black;
     --sudoku-inside-border-color: #494949;
     --sudoku-minor-border-color: #494949;
@@ -13,6 +14,7 @@
 :root[data-theme="dark"] {
     --main-bg-color: #282828;
     --main-font-color: #EDEDED;
+    --error-font-color: #cd1919;
     --sudoku-main-border-color: #EDEDED;
     --sudoku-inside-border-color: #B7B7B7;
     --sudoku-minor-border-color: #777777;
@@ -510,4 +512,70 @@ dialog::backdrop {
     max-width: 600px;
     width: 80vw;
     height: 150px;
+}
+
+/* *************/
+/* login.index */
+/* *************/
+
+#login-form-container {
+    max-height: 95vh;
+
+    width: 600px;
+    max-width: 90vw;
+
+    border-color: var(--main-font-color);
+    border-width: 3px;
+    border-style: solid;
+
+    padding: 10px;
+    padding-bottom: 50px;
+}
+
+#login-form-sudoku-header {
+    font-size: 5em;
+    text-align: center;
+    margin: 20px;
+}
+
+#login-form-wrapper {
+    height: 100%;
+    width: 70%;
+}
+
+.form-label {
+    font-size: 1.5em
+}
+
+.form-input {
+    font-family: "Times New Roman", serif;
+    margin-top: 5px;
+
+    height: 30px;
+    width: 100%;
+    font-size: 1.5em;
+    padding-left: 10px;
+
+    border-style: solid;
+    border-width: 1px;
+    border-color: var(--main-font-color);
+}
+
+#login-form-submit-div {
+    font-size: 2em;
+}
+
+#login-form-errors {
+    color: var(--error-font-color);
+    font-size: 1.1em;
+}
+
+#login-form-submit {
+    margin-top: 10px;
+    width: 40%
+}
+
+#login-form-submit:hover {
+    background: var(--button-highlight-color);
+    border-radius: 5px;
 }

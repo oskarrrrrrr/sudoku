@@ -49,7 +49,7 @@ function clean(cb) {
 }
 
 exports.watch = function() {
-    watch("src/build.go", series(build, html_build))
+    watch("cmd/build/build.go", series(build, html_build))
     watch("ui/src/index.html", html_build)
     watch("ui/src/*.html", series(html, html_build))
     watch("ui/src/*.css", css)

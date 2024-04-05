@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta content='yes' name='apple-mobile-web-app-capable'/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta content='yes' name='mobile-web-app-capable'/>
+    <title>Sudoku</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body style="height: 100vh;" class="flex-center">
+    <div id="login-form-container" class="flex-center">
+        <div id="login-form-sudoku-header">Sudoku</div>
+        <div id="login-form-wrapper">
+            <form id="login-form">
+                <label for="email-input" class="form-label">email</label><br>
+                <input id="email-input" name="email-input"
+                        type="text" autocomplete="username"
+                        class="form-input"
+                    ><br><br>
+                <label for="pass-input" class="form-label">password</label><br>
+                <input id="pass-input" name="pass-input"
+                        type="password" autocomplete="current-password"
+                        class="form-input" aria-label="password" value
+                    ><br><br>
+                <div id="login-form-errors"></div>
+                <div id="login-form-submit-div" class="flex-center">
+                    <input type="submit" value="log in" id="login-form-submit">
+                </div>
+            </form>
+            <!-- forgot password<br> -->
+            <!-- sign up<br> -->
+        </div>
+    </div>
+    <script type="module" src="login.js"></script>
+  </body>
+</html>

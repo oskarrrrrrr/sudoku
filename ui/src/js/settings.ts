@@ -96,7 +96,7 @@ let themeSetting = new Setting<Theme>(
 )
 
 addEventListener("visibilitychange", (_) => {
-    if (document.visibilityState == "visible") {
+    if (!document.hidden) {
         themeSetting.runOnSet()
     }
 });

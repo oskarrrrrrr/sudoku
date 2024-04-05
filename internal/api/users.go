@@ -16,8 +16,9 @@ func parseErr(w http.ResponseWriter) {
 	http.Error(w, "Failed to parse request.", http.StatusBadRequest)
 }
 
-func internalErr(w http.ResponseWriter) {
+func internalErr(w http.ResponseWriter, err error) {
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+    log.Printf("Inernal err: %v", err)
 }
 
 func hashPassword(pass string) ([]byte, error) {
@@ -60,7 +61,7 @@ func Login(
 
     emailOk, err := validateEmail(creds.Email)
     if err != nil {
-        internalErr(w)
+        internalErr(w, err)
         return
     }
     if !emailOk {
@@ -87,7 +88,7 @@ func Login(
 			checkPassword(DUMMY_PASS, "abc123")
 			http.Error(w, "Access denied.", http.StatusUnauthorized)
 		} else {
-			internalErr(w)
+			internalErr(w, err)
 		}
 		return
 	}
@@ -119,7 +120,7 @@ func CreateUser(
 
     emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(creds.Email))
     if err != nil {
-        internalErr(w)
+        internalErr(w, err)
         return
     }
     if !emailOk {
@@ -133,7 +134,7 @@ func CreateUser(
 
 	pass, err := hashPassword(creds.Password)
 	if err != nil {
-		internalErr(w)
+		internalErr(w, err)
 		return
 	}
 
@@ -144,7 +145,7 @@ func CreateUser(
 	)
 
 	if err != nil {
-		internalErr(w)
+		internalErr(w, err)
 		return
 	}
 
