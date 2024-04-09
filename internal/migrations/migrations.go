@@ -78,7 +78,7 @@ func RunAll(conn *pgx.Conn, ctx context.Context, migrationFiles []string) error 
 		log.Printf("Running migration: '%v'\n", migration)
 		err := Run(conn, ctx, migration)
 		if err != nil {
-			log.Printf("Failed.")
+			log.Printf("Failed. %v", err.Error())
 			return err
 		}
 	}

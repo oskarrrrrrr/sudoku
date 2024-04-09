@@ -6,12 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/oskarrrrrrr/sudoku-web/internal/api"
 	"github.com/oskarrrrrrr/sudoku-web/internal/migrations"
 	"github.com/oskarrrrrrr/sudoku-web/internal/sudoku"
 )
+
+func isProd() bool {
+    return strings.ToLower(os.Getenv("SUDOKU_ENV")) == "prod"
+}
 
 func main() {
 	ctx := context.Background()
@@ -41,10 +46,26 @@ func main() {
 		},
 	)
 
+    emailSender := api.MockEmailSend
+    if isProd() {
+        postmarkToken := os.Getenv("POSTMARK_TOKEN")
+        if postmarkToken == "" {
+            panic("Postmark token undefined")
+        }
+        emailSender = api.GetPostmarkEmailSender("https://api.postmarkapp.com/email", postmarkToken)
+    }
+
 	http.HandleFunc(
 		"POST /api/users",
 		func(w http.ResponseWriter, r *http.Request) {
-			api.CreateUser(conn, ctx, w, r)
+			api.CreateUser(conn, ctx, emailSender, w, r)
+		},
+	)
+
+	http.HandleFunc(
+		"GET /api/verify/{token}",
+		func(w http.ResponseWriter, r *http.Request) {
+			api.VerifyUser(conn, ctx, w, r)
 		},
 	)
 

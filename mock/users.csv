@@ -1,4 +1,4 @@
-email,password
-rick@sanchez.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG
-morty@smith.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG
-coolrick@sanchez.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG
+email,password,verified
+rick@sanchez.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG,true
+morty@smith.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG,true
+coolrick@sanchez.com,$2a$10$GDJv1oPxroQm4w4/ftN2Yu9gDU3tTiYbXTr9zFI9S2rQbhZcjciqG,false

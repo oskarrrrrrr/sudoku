@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,7 +20,7 @@ func parseErr(w http.ResponseWriter) {
 
 func internalErr(w http.ResponseWriter, err error) {
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-    log.Printf("Inernal err: %v", err)
+	log.Printf("Inernal err: %v", err)
 }
 
 func hashPassword(pass string) ([]byte, error) {
@@ -35,12 +37,15 @@ func checkPassword(hash, pass string) bool {
 }
 
 func validateEmail(email string) (bool, error) {
-    emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(email))
-    if err != nil {
-        log.Printf("ERR: Failed email validation: '%s'\n", email)
-        return false, err
-    }
-    return emailOk, nil
+	if len(email) > 320 {
+		return false, nil
+	}
+	emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(email))
+	if err != nil {
+		log.Printf("ERR: Failed email validation: '%s'\n", email)
+		return false, err
+	}
+	return emailOk, nil
 }
 
 type loginCredentials struct {
@@ -59,29 +64,30 @@ func Login(
 		return
 	}
 
-    emailOk, err := validateEmail(creds.Email)
-    if err != nil {
-        internalErr(w, err)
-        return
-    }
-    if !emailOk {
-        http.Error(w, "Invalid email format.", http.StatusBadRequest)
-        return
-    }
-    if len(creds.Password) < PASSWORD_MIN_LEN {
-        http.Error(w, "Password too short.", http.StatusBadRequest)
-        return
-    }
+	emailOk, err := validateEmail(creds.Email)
+	if err != nil {
+		internalErr(w, err)
+		return
+	}
+	if !emailOk {
+		http.Error(w, "Invalid email format.", http.StatusBadRequest)
+		return
+	}
+	if len(creds.Password) < PASSWORD_MIN_LEN {
+		http.Error(w, "Password too short.", http.StatusBadRequest)
+		return
+	}
 
 	var password string
+	var verified bool
 	err = conn.QueryRow(
 		ctx,
-		"SELECT password FROM users WHERE email = $1",
+		"SELECT password, verified FROM users WHERE email = $1",
 		creds.Email,
-	).Scan(&password)
+	).Scan(&password, &verified)
 
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+	if !verified || err != nil {
+		if !verified || errors.Is(err, pgx.ErrNoRows) {
 			// Perform the same amount of work regardless of whether the email exists.
 			// This should prevent a timing attack that tries to detect if an email is registered.
 			const DUMMY_PASS = "$2a$10$jC.KuAg.b116zcRTLTUcS.h/puEb.QViFkuB3tbvvmJXfMXSz.jIm"
@@ -107,29 +113,42 @@ type createUserCredentials struct {
 	Password string `json:"password"`
 }
 
+func SendNewUserEmail(ctx context.Context, sendEmail EmailSender, to, token string) error {
+    link :=  `https://www.` + Domain + `/api/verify/` + token
+    linkHtml := `<a href="` + link + `">` + link + `</a>`
+	email := Email{
+		From:    "verify-email@" + Domain,
+		To:      to,
+		Subject: "Sudoku - Verify Email",
+		HtmlBody: `Hi,<br><br>here is your confirmation link: ` + linkHtml + `<br><br>Best,<br>Oskar`,
+		MessageStream: MessageStreamOutbound,
+	}
+	return sendEmail(ctx, email)
+}
+
 func CreateUser(
-	conn *pgx.Conn, ctx context.Context,
+	conn *pgx.Conn, ctx context.Context, sendEmail EmailSender,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	var creds createUserCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
-    if err != nil {
+	if err != nil {
 		parseErr(w)
 		return
-    }
+	}
 
-    emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(creds.Email))
-    if err != nil {
-        internalErr(w, err)
-        return
-    }
-    if !emailOk {
-        http.Error(w, "Invalid email format.", http.StatusBadRequest)
-        return
-    }
-    if len(creds.Password) < PASSWORD_MIN_LEN {
-        http.Error(w, "Password too short.", http.StatusBadRequest)
-        return
+	emailOk, err := regexp.Match(`^[^@]+@[^@]+\.[^@]+$`, []byte(creds.Email))
+	if err != nil {
+		internalErr(w, err)
+		return
+	}
+	if !emailOk {
+		http.Error(w, "Invalid email format.", http.StatusBadRequest)
+		return
+	}
+	if len(creds.Password) < PASSWORD_MIN_LEN {
+		http.Error(w, "Password too short.", http.StatusBadRequest)
+		return
 	}
 
 	pass, err := hashPassword(creds.Password)
@@ -138,22 +157,98 @@ func CreateUser(
 		return
 	}
 
-	ct, err := conn.Exec(
+	var userId string
+	err = conn.QueryRow(
 		ctx,
-		"INSERT INTO users (email, password) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+		`INSERT INTO users (email, password) VALUES ($1, $2)
+        ON CONFLICT DO NOTHING RETURNING id`,
 		creds.Email, pass,
-	)
+	).Scan(&userId)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "User with this email already exists.", http.StatusConflict)
+		} else {
+			internalErr(w, err)
+		}
+		return
+	}
+
+	expires_at := time.Now().Add(15 * time.Minute)
+	var token string
+	err = conn.QueryRow(
+		ctx,
+		`INSERT INTO verification_tokens (user_id, expires_at) VALUES ($1, $2)
+        ON CONFLICT (user_id) DO UPDATE
+            SET token = gen_random_uuid(),
+                expires_at = $2
+        RETURNING token`,
+		userId, expires_at,
+	).Scan(&token)
 
 	if err != nil {
 		internalErr(w, err)
 		return
 	}
 
-	// TODO: send a reset password email and return success message.
-	if ct.RowsAffected() == 0 {
-		http.Error(w, "User with this email already exists.", http.StatusConflict)
+	log.Printf("New user '%v', token: %v", creds.Email, token)
+    err = SendNewUserEmail(ctx, sendEmail, creds.Email, token)
+    if err != nil {
+        internalErr(w, err)
+        return
+    }
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func VerifyUser(
+	conn *pgx.Conn, ctx context.Context,
+	w http.ResponseWriter, r *http.Request,
+) {
+	token := r.PathValue("token")
+	err := uuid.Validate(token)
+	if err != nil {
+		parseErr(w)
 		return
 	}
 
+	tx, err := conn.Begin(ctx)
+	defer tx.Rollback(context.Background())
+	if err != nil {
+		internalErr(w, err)
+		return
+	}
+
+	var expires_at time.Time
+	var user_id string
+	err = tx.QueryRow(
+		ctx,
+		`DELETE FROM verification_tokens WHERE token = $1 RETURNING user_id, expires_at`,
+		token,
+	).Scan(&user_id, &expires_at)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "Token not found.", http.StatusConflict)
+		} else {
+			internalErr(w, err)
+		}
+		return
+	}
+
+	if time.Now().After(expires_at) {
+		tx.Commit(ctx)
+		http.Error(w, "Token expired.", http.StatusConflict)
+		return
+	}
+
+	ct, err := tx.Exec(ctx, `UPDATE users SET verified = true WHERE id = $1`, user_id)
+
+	if err != nil || ct.RowsAffected() != 1 {
+		internalErr(w, err)
+		tx.Rollback(ctx)
+		return
+	}
+
+	tx.Commit(ctx)
 	w.WriteHeader(http.StatusNoContent)
 }
