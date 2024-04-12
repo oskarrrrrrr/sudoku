@@ -15,7 +15,23 @@ import (
 )
 
 func isProd() bool {
-    return strings.ToLower(os.Getenv("SUDOKU_ENV")) == "prod"
+	return strings.ToLower(os.Getenv("SUDOKU_ENV")) == "prod"
+}
+
+type HTMLDir struct {
+	Dir http.Dir
+}
+
+func (d HTMLDir) Open(name string) (http.File, error) {
+	// Try name as supplied
+	f, err := d.Dir.Open(name)
+	if os.IsNotExist(err) {
+		// Not found, try with .html
+		if f, err := d.Dir.Open(name + ".html"); err == nil {
+			return f, nil
+		}
+	}
+	return f, err
 }
 
 func main() {
@@ -29,7 +45,8 @@ func main() {
 	migs := migrations.ListMigrations("migrations")
 	migrations.RunAll(conn, ctx, migs)
 
-	http.Handle("/", http.FileServer(http.Dir("./static")))
+    fs := http.FileServer(HTMLDir{Dir: http.Dir("./static")})
+	http.Handle("/", fs)
 
 	sudokus := sudoku.ReadSudokus()
 	http.HandleFunc(
@@ -46,14 +63,14 @@ func main() {
 		},
 	)
 
-    emailSender := api.MockEmailSend
-    if isProd() {
-        postmarkToken := os.Getenv("POSTMARK_TOKEN")
-        if postmarkToken == "" {
-            panic("Postmark token undefined")
-        }
-        emailSender = api.GetPostmarkEmailSender("https://api.postmarkapp.com/email", postmarkToken)
-    }
+	emailSender := api.MockEmailSend
+	if isProd() {
+		postmarkToken := os.Getenv("POSTMARK_TOKEN")
+		if postmarkToken == "" {
+			panic("Postmark token undefined")
+		}
+		emailSender = api.GetPostmarkEmailSender("https://api.postmarkapp.com/email", postmarkToken)
+	}
 
 	http.HandleFunc(
 		"POST /api/users",
