@@ -5,13 +5,43 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 )
+
+var UI_DIR string = filepath.Join("ui", "src")
+var OUT_DIR string = filepath.Join("site", "static")
 
 func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func readTemplateString(file_name string) string {
+	f, err := os.Open(file_name)
+	check(err)
+	defer f.Close()
+	templateStringBytes, err := io.ReadAll(f)
+	check(err)
+	return string(templateStringBytes[:])
+}
+
+func renderTemplate(file string, tempName string, input any) {
+	tempPath := path.Join(UI_DIR, file)
+	templateString := readTemplateString(tempPath)
+
+	temp, err := template.New(tempName).Parse(templateString)
+	check(err)
+
+	outPath := path.Join(OUT_DIR, file)
+	of, err := os.Create(outPath)
+	check(err)
+	defer of.Close()
+
+	err = temp.ExecuteTemplate(of, tempName, input)
+	check(err)
 }
 
 type Ids struct {
@@ -34,20 +64,7 @@ type Sudoku struct {
 	Rows []SudokuRow
 }
 
-type TemplateInput struct {
-	Sudoku Sudoku
-}
-
-func readTemplateString(file_name string) string {
-	f, err := os.Open(file_name)
-	check(err)
-	defer f.Close()
-	templateStringBytes, err := io.ReadAll(f)
-	check(err)
-	return string(templateStringBytes[:])
-}
-
-func generateTemplateInput(n int) TemplateInput {
+func newSudoku(n int) Sudoku {
 	rows := make([]SudokuRow, n*n)
 	for rowIdx := range rows {
 		row := &rows[rowIdx]
@@ -63,22 +80,58 @@ func generateTemplateInput(n int) TemplateInput {
 			}
 		}
 	}
-	return TemplateInput{Sudoku{Rows: rows[:]}}
+	return Sudoku{Rows: rows[:]}
+}
+
+func home(header template.HTML) {
+	input := struct {
+		Header template.HTML
+		Sudoku Sudoku
+	}{
+		Header: header,
+		Sudoku: newSudoku(3),
+	}
+	renderTemplate("index.html", "index", input)
+}
+
+func login(header template.HTML) {
+	renderTemplate(
+		"login.html", "login",
+		struct{ Header template.HTML }{Header: header},
+	)
+}
+
+func register(header template.HTML) {
+	renderTemplate(
+		"register.html", "register",
+		struct{ Header template.HTML }{Header: header},
+	)
+}
+
+func register_complete(header template.HTML) {
+	renderTemplate(
+		"register-complete.html", "register-complete",
+		struct{ Header template.HTML }{Header: header},
+	)
+}
+
+func forgot_password(header template.HTML) {
+	renderTemplate(
+		"forgot-password.html", "forgot-password",
+		struct{ Header template.HTML }{Header: header},
+	)
 }
 
 func main() {
-	templateString := readTemplateString("ui/src/index.html")
-	input := generateTemplateInput(3)
-	temp, err := template.New("index").Parse(templateString)
+	err := os.MkdirAll(OUT_DIR, os.FileMode(0777))
 	check(err)
 
-	err = os.MkdirAll("site", os.FileMode(0777))
-	check(err)
+	headerPath := path.Join(UI_DIR, "header.html")
+	header := template.HTML(readTemplateString(headerPath))
 
-	of, err := os.Create("site/static/index.html")
-	check(err)
-	defer of.Close()
-
-	err = temp.ExecuteTemplate(of, "index", input)
-	check(err)
+	home(header)
+	login(header)
+	register(header)
+	register_complete(header)
+	forgot_password(header)
 }

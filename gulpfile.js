@@ -50,8 +50,7 @@ function clean(cb) {
 
 exports.watch = function() {
     watch("cmd/build/build.go", series(build, html_build))
-    watch("ui/src/index.html", html_build)
-    watch("ui/src/*.html", series(html, html_build))
+    watch("ui/src/*.html", html_build)
     watch("ui/src/*.css", css)
     watch("ui/src/**/*.ts", tsc)
     watch("cmd/**/*.go", build_server)

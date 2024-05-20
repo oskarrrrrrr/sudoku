@@ -23,10 +23,8 @@ type HTMLDir struct {
 }
 
 func (d HTMLDir) Open(name string) (http.File, error) {
-	// Try name as supplied
 	f, err := d.Dir.Open(name)
 	if os.IsNotExist(err) {
-		// Not found, try with .html
 		if f, err := d.Dir.Open(name + ".html"); err == nil {
 			return f, nil
 		}
@@ -45,7 +43,7 @@ func main() {
 	migs := migrations.ListMigrations("migrations")
 	migrations.RunAll(conn, ctx, migs)
 
-    fs := http.FileServer(HTMLDir{Dir: http.Dir("./static")})
+	fs := http.FileServer(HTMLDir{Dir: http.Dir("./static")})
 	http.Handle("/", fs)
 
 	sudokus := sudoku.ReadSudokus()
@@ -73,14 +71,14 @@ func main() {
 	}
 
 	http.HandleFunc(
-		"POST /api/users",
+		"POST /api/register",
 		func(w http.ResponseWriter, r *http.Request) {
-			api.CreateUser(conn, ctx, emailSender, w, r)
+			api.CreateUser(conn, ctx, emailSender, !isProd(), w, r)
 		},
 	)
 
 	http.HandleFunc(
-		"GET /api/verify/{token}",
+		"GET /verify/{token}",
 		func(w http.ResponseWriter, r *http.Request) {
 			api.VerifyUser(conn, ctx, w, r)
 		},

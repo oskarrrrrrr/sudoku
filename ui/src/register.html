@@ -5,31 +5,31 @@
     <div class="auth-form-container flex-center">
         <div class="auth-form-sudoku-header">Sudoku</div>
         <div class="auth-form-wrapper">
-            <form id="login-form">
+            <form id="register-form">
                 <label for="email-input" class="form-label">email</label><br>
                 <input id="email-input" name="email-input"
                         type="text" autocomplete="email"
                         class="form-input"
-                    ><br><br>
+                >
+                <br><br>
                 <label for="pass-input" class="form-label">password</label><br>
                 <input id="pass-input" name="pass-input"
-                        type="password" autocomplete="current-password"
+                        type="password" autocomplete="new-password"
                         class="form-input" aria-label="password" value
                     ><br><br>
-                <div id="login-form-errors" class="auth-form-errors"></div>
+                <div id="register-form-errors" class="auth-form-errors"></div>
                 <div class="auth-form-submit-div flex-center">
-                    <input type="submit" value="Log In" id="login-form-submit"
+                    <input type="submit" value="Register" id="register-form-submit"
                            class="auth-form-submit">
                 </div>
             </form>
             <br>
             <div class="auth-other">
                 or:
-                <a class="auth-other-button" href="/register">register</a>
-                <a class="auth-other-button" href="/forgot-password">forgot password</a>
+                <a class="auth-other-button" href="/login">log in</a>
             </div>
         </div>
     </div>
-    <script type="module" src="login.js"></script>
+    <script type="module" src="register.js"></script>
   </body>
 </html>

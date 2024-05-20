@@ -29,6 +29,8 @@ dialog[data-theme="dark"] {
     color: var(--main-font-color);
 }
 
+a { all: unset; }
+
 button, input[type="submit"], input[type="reset"] {
 	background: none;
 	color: inherit;
@@ -514,11 +516,11 @@ dialog::backdrop {
     height: 150px;
 }
 
-/* *************/
-/* login.index */
-/* *************/
+/* ******/
+/* auth */
+/* ******/
 
-#login-form-container {
+.auth-form-container {
     max-height: 95vh;
 
     width: 600px;
@@ -532,13 +534,13 @@ dialog::backdrop {
     padding-bottom: 50px;
 }
 
-#login-form-sudoku-header {
+.auth-form-sudoku-header {
     font-size: 5em;
     text-align: center;
     margin: 20px;
 }
 
-#login-form-wrapper {
+.auth-form-wrapper {
     height: 100%;
     width: 70%;
 }
@@ -561,21 +563,37 @@ dialog::backdrop {
     border-color: var(--main-font-color);
 }
 
-#login-form-submit-div {
+.auth-form-submit-div {
     font-size: 2em;
 }
 
-#login-form-errors {
+.auth-form-errors {
+    margin-bottom: .5em;
     color: var(--error-font-color);
     font-size: 1.1em;
 }
 
-#login-form-submit {
-    margin-top: 10px;
+.auth-form-submit {
     width: 40%
 }
 
-#login-form-submit:hover {
+.auth-form-submit:hover {
+    background: var(--button-highlight-color);
+    border-radius: 5px;
+}
+
+.auth-other {
+    font-size: 1.2em;
+}
+
+.auth-other-button {
+    border: none;
+    background: none;
+    margin-bottom: 5px;
+    padding: 8px;
+}
+
+.auth-other-button:hover {
     background: var(--button-highlight-color);
     border-radius: 5px;
 }

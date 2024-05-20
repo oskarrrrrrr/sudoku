@@ -2,7 +2,6 @@
 
 # drop all connections
 psql \
-    -U postgres \
     -d sudoku-dev \
     -c "SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
@@ -16,11 +15,9 @@ export DATABASE_URL="postgresql://localhost/sudoku-dev"
 go run cmd/migrations/mig.go -cmd run-all
 
 psql \
-    -U postgres \
     -d sudoku-dev \
     -c "\copy users (email, password, verified) FROM mock/users.csv DELIMITER ',' CSV HEADER;"
 
 psql \
-    -U postgres \
     -d sudoku-dev \
     -c "\copy verification_tokens (user_id, expires_at) FROM mock/verification_tokens.csv DELIMITER ',' CSV HEADER;"

@@ -114,20 +114,20 @@ type createUserCredentials struct {
 }
 
 func SendNewUserEmail(ctx context.Context, sendEmail EmailSender, to, token string) error {
-    link :=  `https://www.` + Domain + `/api/verify/` + token
+    link :=  `https://www.` + Domain + `/verify/` + token
     linkHtml := `<a href="` + link + `">` + link + `</a>`
 	email := Email{
 		From:    "verify-email@" + Domain,
 		To:      to,
 		Subject: "Sudoku - Verify Email",
-		HtmlBody: `Hi,<br><br>here is your confirmation link: ` + linkHtml + `<br><br>Best,<br>Oskar`,
+		HtmlBody: `Hi,<br><br>here is your activation link: ` + linkHtml + `<br><br>Best,<br>Oskar`,
 		MessageStream: MessageStreamOutbound,
 	}
 	return sendEmail(ctx, email)
 }
 
 func CreateUser(
-	conn *pgx.Conn, ctx context.Context, sendEmail EmailSender,
+	conn *pgx.Conn, ctx context.Context, sendEmail EmailSender, debug bool,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	var creds createUserCredentials
@@ -165,12 +165,16 @@ func CreateUser(
 		creds.Email, pass,
 	).Scan(&userId)
 
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			http.Error(w, "User with this email already exists.", http.StatusConflict)
-		} else {
-			internalErr(w, err)
-		}
+    if errors.Is(err, pgx.ErrNoRows) {
+        // TODO: send password reset link instead
+        err = conn.QueryRow(
+            ctx,
+            `SELECT id FROM users WHERE email =  $1`,
+            creds.Email,
+        ).Scan(&userId)
+    }
+    if err != nil {
+        internalErr(w, err)
 		return
 	}
 
@@ -191,7 +195,10 @@ func CreateUser(
 		return
 	}
 
-	log.Printf("New user '%v', token: %v", creds.Email, token)
+    if debug {
+        log.Printf("New user: '%v', token: %v\n", creds.Email, token)
+    }
+
     err = SendNewUserEmail(ctx, sendEmail, creds.Email, token)
     if err != nil {
         internalErr(w, err)
