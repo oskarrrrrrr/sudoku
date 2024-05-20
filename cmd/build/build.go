@@ -28,14 +28,14 @@ func readTemplateString(file_name string) string {
 	return string(templateStringBytes[:])
 }
 
-func renderTemplate(file string, tempName string, input any) {
-	tempPath := path.Join(UI_DIR, file)
+func renderTemplate(inFile, outFile, tempName string, input any) {
+	tempPath := path.Join(UI_DIR, inFile)
 	templateString := readTemplateString(tempPath)
 
 	temp, err := template.New(tempName).Parse(templateString)
 	check(err)
 
-	outPath := path.Join(OUT_DIR, file)
+	outPath := path.Join(OUT_DIR, outFile)
 	of, err := os.Create(outPath)
 	check(err)
 	defer of.Close()
@@ -91,33 +91,55 @@ func home(header template.HTML) {
 		Header: header,
 		Sudoku: newSudoku(3),
 	}
-	renderTemplate("index.html", "index", input)
+	renderTemplate("index.html", "index.html", "index", input)
 }
 
 func login(header template.HTML) {
 	renderTemplate(
-		"login.html", "login",
+		"login.html", "login.html", "login",
 		struct{ Header template.HTML }{Header: header},
 	)
+}
+
+type authMessageInput struct {
+	Header  template.HTML
+	Message string
 }
 
 func register(header template.HTML) {
 	renderTemplate(
-		"register.html", "register",
+		"register.html", "register.html", "register",
 		struct{ Header template.HTML }{Header: header},
+	)
+	renderTemplate(
+		"auth-message.html", "register-complete.html", "register-complete",
+		authMessageInput {
+            Header: header,
+            Message: "Registration complete. Check your email to activate your account.",
+        },
 	)
 }
 
-func register_complete(header template.HTML) {
+func verification(header template.HTML) {
 	renderTemplate(
-		"register-complete.html", "register-complete",
-		struct{ Header template.HTML }{Header: header},
+		"auth-message.html", "verification-succeeded.html", "verification-succeeded",
+		authMessageInput {
+            Header: header,
+            Message: "Verification successful. You can now use your account.",
+        },
+	)
+	renderTemplate(
+		"auth-message.html", "verification-failed.html", "verification-failed",
+		authMessageInput {
+            Header: header,
+            Message: "Verification failed. Invalid or expired token. Register again.",
+        },
 	)
 }
 
 func forgot_password(header template.HTML) {
 	renderTemplate(
-		"forgot-password.html", "forgot-password",
+		"forgot-password.html", "forgot-password.html", "forgot-password",
 		struct{ Header template.HTML }{Header: header},
 	)
 }
@@ -132,6 +154,6 @@ func main() {
 	home(header)
 	login(header)
 	register(header)
-	register_complete(header)
+    verification(header)
 	forgot_password(header)
 }

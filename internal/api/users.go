@@ -114,13 +114,13 @@ type createUserCredentials struct {
 }
 
 func SendNewUserEmail(ctx context.Context, sendEmail EmailSender, to, token string) error {
-    link :=  `https://www.` + Domain + `/verify/` + token
-    linkHtml := `<a href="` + link + `">` + link + `</a>`
+	link := `https://www.` + Domain + `/verify/` + token
+	linkHtml := `<a href="` + link + `">` + link + `</a>`
 	email := Email{
-		From:    "verify-email@" + Domain,
-		To:      to,
-		Subject: "Sudoku - Verify Email",
-		HtmlBody: `Hi,<br><br>here is your activation link: ` + linkHtml + `<br><br>Best,<br>Oskar`,
+		From:          "verify-email@" + Domain,
+		To:            to,
+		Subject:       "Sudoku - Verify Email",
+		HtmlBody:      `Hi,<br><br>here is your activation link: ` + linkHtml + `<br><br>Best,<br>Oskar`,
 		MessageStream: MessageStreamOutbound,
 	}
 	return sendEmail(ctx, email)
@@ -165,16 +165,16 @@ func CreateUser(
 		creds.Email, pass,
 	).Scan(&userId)
 
-    if errors.Is(err, pgx.ErrNoRows) {
-        // TODO: send password reset link instead
-        err = conn.QueryRow(
-            ctx,
-            `SELECT id FROM users WHERE email =  $1`,
-            creds.Email,
-        ).Scan(&userId)
-    }
-    if err != nil {
-        internalErr(w, err)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// TODO: send password reset link instead
+		err = conn.QueryRow(
+			ctx,
+			`SELECT id FROM users WHERE email =  $1`,
+			creds.Email,
+		).Scan(&userId)
+	}
+	if err != nil {
+		internalErr(w, err)
 		return
 	}
 
@@ -195,26 +195,27 @@ func CreateUser(
 		return
 	}
 
-    if debug {
-        log.Printf("New user: '%v', token: %v\n", creds.Email, token)
-    }
+	if debug {
+		log.Printf("New user: '%v', token: %v\n", creds.Email, token)
+	}
 
-    err = SendNewUserEmail(ctx, sendEmail, creds.Email, token)
-    if err != nil {
-        internalErr(w, err)
-        return
-    }
+	err = SendNewUserEmail(ctx, sendEmail, creds.Email, token)
+	if err != nil {
+		internalErr(w, err)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func VerifyUser(
 	conn *pgx.Conn, ctx context.Context,
+	htmlOnSuccess, htmlOnFail []byte,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	token := r.PathValue("token")
 	err := uuid.Validate(token)
 	if err != nil {
-		parseErr(w)
+		w.Write(htmlOnFail)
 		return
 	}
 
@@ -233,23 +234,12 @@ func VerifyUser(
 		token,
 	).Scan(&user_id, &expires_at)
 
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			http.Error(w, "Token not found.", http.StatusConflict)
-		} else {
-			internalErr(w, err)
-		}
-		return
-	}
-
-	if time.Now().After(expires_at) {
-		tx.Commit(ctx)
-		http.Error(w, "Token expired.", http.StatusConflict)
-		return
+	if err != nil || time.Now().After(expires_at) {
+        w.Write(htmlOnFail)
+        return
 	}
 
 	ct, err := tx.Exec(ctx, `UPDATE users SET verified = true WHERE id = $1`, user_id)
-
 	if err != nil || ct.RowsAffected() != 1 {
 		internalErr(w, err)
 		tx.Rollback(ctx)
@@ -257,5 +247,5 @@ func VerifyUser(
 	}
 
 	tx.Commit(ctx)
-	w.WriteHeader(http.StatusNoContent)
+	w.Write(htmlOnSuccess)
 }

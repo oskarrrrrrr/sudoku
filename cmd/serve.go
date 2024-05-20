@@ -14,6 +14,12 @@ import (
 	"github.com/oskarrrrrrr/sudoku-web/internal/sudoku"
 )
 
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func isProd() bool {
 	return strings.ToLower(os.Getenv("SUDOKU_ENV")) == "prod"
 }
@@ -77,10 +83,19 @@ func main() {
 		},
 	)
 
+	verification_succeeded_html, err := os.ReadFile("static/verification-succeeded.html")
+	check(err)
+    verification_failed_html, err := os.ReadFile("static/verification-failed.html")
+	check(err)
+
 	http.HandleFunc(
 		"GET /verify/{token}",
 		func(w http.ResponseWriter, r *http.Request) {
-			api.VerifyUser(conn, ctx, w, r)
+			api.VerifyUser(
+				conn, ctx,
+				verification_succeeded_html, verification_failed_html,
+				w, r,
+			)
 		},
 	)
 
