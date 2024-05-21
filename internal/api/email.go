@@ -10,8 +10,6 @@ import (
 	"net/http"
 )
 
-const Domain = "oskarrrrrrr.xyz"
-
 type MessageStream string
 
 const (

@@ -14,6 +14,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const Domain = "boringsudoku.com"
+
 func parseErr(w http.ResponseWriter) {
 	http.Error(w, "Failed to parse request.", http.StatusBadRequest)
 }

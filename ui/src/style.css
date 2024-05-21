@@ -97,8 +97,7 @@ body {
 .top-bar-button {
     border: none;
     background: none;
-    margin-bottom: 5px;
-    padding: 8px;
+    padding: .5em;
 
     font-size: 1.3em;
     @media screen and (max-width: 500px) {
@@ -107,8 +106,8 @@ body {
     @media screen and (max-width: 400px) {
         font-size: 1em;
     }
-    @media screen and (max-width: 350px) {
-        font-size: .9em;
+    @media screen and (max-width: 375px) {
+        font-size: .8em;
     }
 
 }
@@ -130,14 +129,17 @@ body {
     font-size: 4em;
     cursor: default;
 
-    @media screen and (max-width: 500px) {
-        font-size: 3.2em;
+    @media screen and (max-width: 650px) {
+        font-size: 3.0em;
     }
-    @media screen and (max-width: 400px) {
-        font-size: 2.8em;
-    }
-    @media screen and (max-width: 350px) {
+    @media screen and (max-width: 550px) {
         font-size: 2.5em;
+    }
+    @media screen and (max-width: 450px) {
+        font-size: 2.0em;
+    }
+    @media screen and (max-width: 375px) {
+        font-size: 1.5em;
     }
 }
 

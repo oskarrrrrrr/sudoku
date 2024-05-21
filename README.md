@@ -1,6 +1,6 @@
 # Sudoku
 
-Checkout [here](https://www.oskarrrrrrr.xyz).
+Checkout [here](https://www.boringsudoku.com).
 
 
 # Development
