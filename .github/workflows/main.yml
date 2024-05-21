@@ -26,5 +26,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
       - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o site/api ./cmd/serve.go
-      - run: rsync -a --delete site/ root@oskarrrrrrr.xyz:/var/www/sudoku
-      - run: ssh root@oskarrrrrrr.xyz -t "systemctl restart sudoku-api"
+      - run: rsync -a --delete site/ root@boringsudoku.com:/var/www/sudoku
+      - run: ssh root@boringsudoku.com -t "systemctl restart sudoku-api"
